@@ -1,0 +1,20 @@
+{
+  "name": "outsystems-loop",
+  "displayName": "OutSystems Design Loop",
+  "version": "1.0.0",
+  "description": "Agentic Figma → OutSystems design-system workflow: token extraction, component audit, BEM CSS, Web Components, flag-don't-fix design findings, and an autonomous maker/checker build loop.",
+  "author": {
+    "name": "Kharlo Ridado"
+  },
+  "keywords": [
+    "outsystems",
+    "odc",
+    "figma",
+    "design-system",
+    "design-tokens",
+    "bem",
+    "web-components",
+    "accessibility"
+  ],
+  "license": "UNLICENSED"
+}

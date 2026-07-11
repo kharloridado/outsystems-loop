@@ -1,0 +1,17 @@
+{
+  "name": "outsystems-loop",
+  "description": "The OutSystems design-system workflow — skills + maker/checker agents for the Figma → OutSystems loop.",
+  "owner": {
+    "name": "Kharlo Ridado"
+  },
+  "plugins": [
+    {
+      "name": "outsystems-loop",
+      "source": "./",
+      "description": "Agentic Figma → OutSystems design-system workflow: token extraction, component audit, BEM CSS, Web Components, flag-don't-fix design findings, and an autonomous maker/checker build loop.",
+      "version": "1.0.0",
+      "category": "development",
+      "keywords": ["outsystems", "odc", "figma", "design-system"]
+    }
+  ]
+}
