@@ -30,7 +30,7 @@ Take ONE work item (named in the prompt, referenced in `loop/state.json`) and pr
 - **A border must never change a component's size.** A 1px border adds 2px of height. Use `inset box-shadow` / `outline` (zero layout cost) plus a pinned height.
 - **Never select on a framework runtime utility class** (e.g. `.placeholder-empty`). It is behavioural, not a styling hook.
 - **Prefer the host's own responsive classes** (`.tablet` / `.phone`) over raw `@media` breakpoints — the host's breakpoints are not yours.
-- **Every `src/blocks/*.css` you add must also be `<link>`ed in `preview/index.html`**, or it is not actually being previewed and a real bug can hide behind a passing preview.
+- **Every `src/blocks/*.css` you add must also be `<link>`ed in `preview/index.html`**, in the right layer order (framework base → theme → overrides), or it is not actually being previewed and a real bug can hide behind a passing preview. The checker MEASURES the preview, so an unlinked or mis-layered stylesheet is not a cosmetic omission — it is the difference between a reviewed component and an unreviewed one.
 
 ## Output
 - Write artifact files into `src/` (components/blocks) or `tokens/`.
