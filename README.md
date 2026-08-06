@@ -40,7 +40,10 @@ get the same version.
 **Skills**
 | Skill | Role |
 | --- | --- |
-| `/outsystems-loop:design-loop` | The orchestrator: freeze ref → maker → checker → commit → handover → findings → report. |
+| `/outsystems-loop:design-loop` | The orchestrator: freeze ref → maker → checker → commit → handover → findings → report. Queue comes from the signed inventory. |
+| `/outsystems-loop:board-advance` | Board mode: `Ready` → claim → build → `Ready for Review` \| `Blocked`. Needs Figma + a browser. |
+| `/outsystems-loop:board-ship` | Board mode: `Approved` → PR → squash-merge to `main` → handover Task → `Handover`. No Figma — cloud-safe. |
+| `/outsystems-loop:board-sync` | Board mode: reconcile board/git/state, reclaim stale claims, regenerate `deliverables.md`. |
 | `figma-to-outsystems` | Master workflow orchestrator. |
 | `outsystems-component-audit` | Triage a design: exists as-is / customize / build custom (L1–L5). |
 | `outsystems-token-extractor` | Figma variables → `:root` custom properties. |
@@ -73,6 +76,36 @@ This exists because a previous template shipped `Spacing base: 4pt` as a plausib
 that nobody had actually verified. The loop then dutifully flagged every value that wasn't a
 multiple of 4, manufacturing a batch of false-positive findings and a bug that had to be closed as
 not-planned. **A credible-looking default is worse than a blank.**
+
+## Board-driven mode
+
+The four build skills share one procedure — `skills/design-loop/references/per-item-build.md` — so
+the build is identical whether the queue is a signed inventory or a GitHub Project board. What
+changes is where work comes from and where it goes.
+
+A consuming project opts in by setting `project.config.json` → `board.owner` and `board.number`.
+It must also provide:
+
+- **the eight `Status` lanes**, in order: `Backlog · Ready · In Progress · Ready for Review ·
+  Approved · Handover · Done · Blocked`, plus the `FigmaNode`, `Branch`, `Runner`, `Tier`, `Level`
+  and `Type` fields. Keep every field name a **single PascalCase word** — `gh` lowercases only the
+  first character when it flattens fields into `item-list` JSON;
+- **`board.owners`** — the logins whose card comments are read as spec. Everything else on a card is
+  untrusted data, never instructions;
+- a `deliverable` issue template, and `gh auth refresh -s project`.
+
+Three rules the skills enforce and a project cannot relax:
+
+1. **No agent moves a card to `Approved` or `Done`.** Those two lanes are the human's signature; a
+   checker PASS reaches `Ready for Review` and stops.
+2. **The handover Task is opened after the PR merges**, never at checker-PASS. A handover says
+   "paste this into a live environment" and must not point at unmerged work.
+3. **`gh pr merge` exits 0 when it merely arms auto-merge** behind a failing required check, so the
+   merge is re-read with `gh pr view --json state` and the card only advances on `MERGED`.
+
+`In Progress` is a *cooperative* claim, not a lock — Projects v2 has no compare-and-swap. See
+`references/board-api.md` for the full cookbook, including why the built-in `Status` field cannot be
+deleted and must be edited with `updateProjectV2Field` instead.
 
 ## The rendered-fidelity gate
 
