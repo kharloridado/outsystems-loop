@@ -40,10 +40,10 @@ get the same version.
 **Skills**
 | Skill | Role |
 | --- | --- |
-| `/outsystems-loop:design-loop` | The orchestrator: freeze ref → maker → checker → commit → handover → findings → report. Queue comes from the signed inventory. |
-| `/outsystems-loop:board-advance` | Board mode: `Ready` → claim → build → `Ready for Review` \| `Blocked`. Needs Figma + a browser. |
-| `/outsystems-loop:board-ship` | Board mode: `Approved` → PR → squash-merge to `main` → handover Task → `Handover`. No Figma — cloud-safe. |
-| `/outsystems-loop:board-sync` | Board mode: reconcile board/git/state, reclaim stale claims, regenerate `deliverables.md`. |
+| `/outsystems-loop:project-setup` | **Start here on a fresh clone.** One pass: interview → config → deps + submodule → labels → deliverables into the signed inventory and the queue → routines → verify it all builds. |
+| `/outsystems-loop:design-loop` | The orchestrator: freeze ref → maker → checker → commit → **one PR per deliverable** → findings → report. Queue is the signed inventory. |
+| `/outsystems-loop:board-ship` | Board *view*, local only: `Approved` → PR → squash-merge to `main` → handover Task → `Handover`. |
+| `/outsystems-loop:board-sync` | Board *view*, local only: reconcile board/git/state, regenerate `deliverables.md`. |
 | `figma-to-outsystems` | Master workflow orchestrator. |
 | `outsystems-component-audit` | Triage a design: exists as-is / customize / build custom (L1–L5). |
 | `outsystems-token-extractor` | Figma variables → `:root` custom properties. |
@@ -77,14 +77,34 @@ that nobody had actually verified. The loop then dutifully flagged every value t
 multiple of 4, manufacturing a batch of false-positive findings and a bug that had to be closed as
 not-planned. **A credible-looking default is worse than a blank.**
 
-## Board-driven mode
+## The output: one PR per deliverable
 
-The four build skills share one procedure — `skills/design-loop/references/per-item-build.md` — so
-the build is identical whether the queue is a signed inventory or a GitHub Project board. What
-changes is where work comes from and where it goes.
+The loop's unit of work is one item, and its unit of *review* is one PR. Each item is cut fresh
+from `origin/main`, built, checked, and landed as an **open PR** whose body carries the plan, the
+spec of record, the gate results including the MEASUREMENTS table, both decision logs verbatim, and
+the findings — filed and challenged-out. The template is
+`skills/design-loop/references/pr-body.md`.
 
-A consuming project opts in by setting `project.config.json` → `board.owner` and `board.number`.
-It must also provide:
+This is where the loop's reasoning goes. It used to live in `state.json` and a run report, which
+meant a reviewer opened a diff and re-derived intent from the code — the expensive half of review,
+repeated per component. The build already produces all of it; the PR is simply where a human is
+actually looking.
+
+The loop **never merges and never approves**. It stops at an open PR, and the handover Task is
+opened on the *next run* after that PR has merged — self-healing, so a crashed run loses nothing.
+
+## The queue is a file, not a board
+
+`loop/goal.md`'s signed inventory is the queue; `loop/state.json` holds item status. A GitHub
+Project board, where a project points at one, is a **human view** and is never read as the queue.
+
+That is not a style preference. Projects v2 is GraphQL-only: a scheduled run has no `gh` on PATH,
+no `project_*` tool, no GraphQL passthrough, and raw GraphQL to `api.github.com` is refused by the
+egress proxy. A board-queued loop therefore fails while claiming a card — before the maker, every
+time, silently. Measured on a real project: an hourly board routine fired nine times a weekday and
+every single run was a guaranteed no-op. Files in the clone are readable from anywhere.
+
+`board-ship` and `board-sync` remain for local, human-invoked use against that view. They expect:
 
 - **the eight `Status` lanes**, in order: `Backlog · Ready · In Progress · Ready for Review ·
   Approved · Handover · Done · Blocked`, plus the `FigmaNode`, `Branch`, `Runner`, `Tier`, `Level`
@@ -123,13 +143,27 @@ never actually happened. A component shipped with an icon at 1.06:1 contrast and
 **our source was right; only the computed style was wrong**, and nothing in the loop was looking at
 the computed style.
 
-Two consequences for the consuming project:
+**It runs headless, from Node** — `scripts/measure-fidelity.mjs`, driving Playwright. That is what
+makes an unattended run able to return a real verdict. The gate used to go through an editor-only
+Chrome extension, so every scheduled run reported `unverified`, `unverified` caps at FAIL, and the
+nightly loop could never hand over finished work. The identical command now runs at a keyboard, in
+a routine, and in CI.
 
-- The project must expose `npm run preview` and `<link>` every block stylesheet in the harness, in
-  layer order. CSS that isn't loaded means the preview proved nothing.
-- The checker needs browser tools (`mcp__claude-in-chrome__*`). Without them it correctly returns
-  `VISUAL: unverified` and **items stop auto-passing** — that is the gate working, not a
-  misconfiguration to route around.
+The script measures; it does not judge. It never reads the ref, so it cannot call drift — it
+reports numbers and an exit code (`0` measured · `3` something unmeasurable · `4` no browser or no
+page), and the checker compares them to the ref. Keeping mechanism and judgment apart is what stops
+the gate from grading itself.
+
+Three consequences for the consuming project:
+
+- It must expose `npm run preview` and `<link>` every block stylesheet in the harness, in layer
+  order. CSS that isn't loaded means the preview proved nothing.
+- It needs a browser: `playwright-core` plus an installed Chrome or Edge (no download), or the full
+  `playwright` package with bundled Chromium.
+- **A failed stylesheet or font request invalidates the whole viewport.** A missing CSS file does
+  not throw — the cascade falls back and every computed value still reads as a plausible number
+  describing a page nobody will ever see. The commonest cause is `vendor/outsystems-ui/` never
+  being built, and it is why `git submodule update --init` is not optional.
 
 ## Local development
 
