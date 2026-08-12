@@ -42,6 +42,7 @@ get the same version.
 | --- | --- |
 | `/outsystems-loop:project-setup` | **Start here on a fresh clone.** One pass: interview → config → deps + submodule → labels → deliverables into the signed inventory and the queue → routines → verify it all builds. |
 | `/outsystems-loop:design-loop` | The orchestrator: freeze ref → maker → checker → commit → **one PR per deliverable** → findings → report. Queue is the signed inventory. |
+| `/outsystems-loop:revalidate` | Re-run the checker against an **already-built** artifact, item or PR — no maker, no rebuild. For review questions, hand-edits, or a verdict you distrust. |
 | `/outsystems-loop:board-ship` | Board *view*, local only: `Approved` → PR → squash-merge to `main` → handover Task → `Handover`. |
 | `/outsystems-loop:board-sync` | Board *view*, local only: reconcile board/git/state, regenerate `deliverables.md`. |
 | `figma-to-outsystems` | Master workflow orchestrator. |
@@ -153,6 +154,34 @@ The script measures; it does not judge. It never reads the ref, so it cannot cal
 reports numbers and an exit code (`0` measured · `3` something unmeasurable · `4` no browser or no
 page), and the checker compares them to the ref. Keeping mechanism and judgment apart is what stops
 the gate from grading itself.
+
+### Judged once, verified forever
+
+The checker's verdict is written into the PR at build time and never re-computed — so a fixup
+commit, or a token changed on `main` after the branch was cut, would leave the PR carrying a
+measurement that no longer describes what would merge.
+
+`scripts/compare-measurements.mjs` closes that. The `measurements.json` the checker commits with
+each item becomes a **baseline**; re-running the same probes later and diffing against it answers a
+strictly narrower question that needs no judgment at all:
+
+| | The question | Who answers | Cadence |
+|---|---|---|---|
+| Build time | *Is this right?* — the render vs the frozen Figma ref | the checker (an agent) | once per item |
+| Every push | *Did this change?* — vs the committed baseline | `compare-measurements.mjs` | free, forever |
+| On demand | *Is this still right?* — re-judge, no rebuild | `revalidate` | when asked |
+
+That makes a CI gate possible with **no API key and no tokens spent**, and it turns every committed
+`probes.json` into a permanent visual regression test — the suite grows with each deliverable, so a
+token change that breaks component #3 is caught while building component #9.
+
+The comparison is **typed by stability**, and that detail is load-bearing: computed strings
+(colour, `font-family`, `font-size`, radius, weight) are environment-stable and diff exactly, while
+`rect`/`ink` geometry depends on font rasterisation and is compared with a tolerance and reported as
+*informational*. A naive deep-equal would fail every pull request on sub-pixel noise, and a gate
+that cries wolf every time teaches people to click through it — at which point it misses the real
+regression too. The highest-value catch, a webfont silently falling back to a system stack, is a
+`font-family` string diff, and that is perfectly stable.
 
 Three consequences for the consuming project:
 

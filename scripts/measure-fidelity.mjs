@@ -108,13 +108,39 @@ const viewports = spec.viewports?.length
   ? spec.viewports
   : [{ name: 'default', ...(spec.viewport || { width: 1280, height: 900 }) }];
 
-/* ---------- browser: bundled chromium, else an installed browser ---------- */
+/* ---------- browser: four routes, so this runs everywhere ----------
+ * A developer's laptop and a CI runner have different browsers available, and the gate has to
+ * work on both or it stops being a gate. In order:
+ *
+ *   1. --executable-path / PLAYWRIGHT_EXECUTABLE_PATH — an explicit override always wins.
+ *   2. `playwright` bundled Chromium — how a cloud image usually ships.
+ *   3. `playwright-core` + channel chrome/msedge — an ALREADY-INSTALLED browser, so a laptop
+ *      costs a ~5MB package instead of a ~150MB download.
+ *   4. `playwright-core` with NO channel — a Chromium put in place by
+ *      `npx playwright-core install chromium`. This is the CI route: a Linux runner has no
+ *      branded Chrome, so routes 2 and 3 both miss and, without this, the gate reported
+ *      "no browser" — a harness fault dressed up as a verdict, on every CI run. */
 const require = createRequire(join(root, 'noop.js'));
+const execPath = arg('executable-path', process.env.PLAYWRIGHT_EXECUTABLE_PATH);
+
 async function launch() {
   const attempts = [];
   const tryLoad = (pkg) => { try { return require(pkg); } catch { return null; } };
-
   const full = tryLoad('playwright');
+  const core = tryLoad('playwright-core') || full;
+
+  if (execPath) {
+    const lib = full || core;
+    if (!lib) {
+      attempts.push('--executable-path given but no playwright package is installed');
+    } else {
+      try {
+        const b = await lib.chromium.launch({ headless: true, executablePath: execPath });
+        return { browser: b, how: `executablePath=${execPath}` };
+      } catch (e) { attempts.push(`executablePath ${execPath}: ${e.message.split('\n')[0]}`); }
+    }
+  }
+
   if (full) {
     try {
       const b = await full.chromium.launch({ headless: true });
@@ -122,7 +148,6 @@ async function launch() {
     } catch (e) { attempts.push(`playwright bundled chromium: ${e.message.split('\n')[0]}`); }
   }
 
-  const core = tryLoad('playwright-core') || full;
   if (core) {
     for (const channel of channelArg ? [channelArg] : ['chrome', 'msedge']) {
       try {
@@ -130,10 +155,19 @@ async function launch() {
         return { browser: b, how: `playwright-core channel=${channel}` };
       } catch (e) { attempts.push(`channel ${channel}: ${e.message.split('\n')[0]}`); }
     }
+    // No channel: the Chromium `npx playwright-core install chromium` downloads.
+    if (!channelArg) {
+      try {
+        const b = await core.chromium.launch({ headless: true });
+        return { browser: b, how: 'playwright-core downloaded chromium' };
+      } catch (e) { attempts.push(`downloaded chromium: ${e.message.split('\n')[0]}`); }
+    }
   }
 
   if (!full && !core) {
     attempts.push('neither `playwright` nor `playwright-core` is installed — run `npm install`');
+  } else {
+    attempts.push('on a runner with no branded browser, run: npx playwright-core install --with-deps chromium');
   }
   die(EXIT_NO_PAGE,
     'no usable browser. The rendered-fidelity gate cannot run, so the item is UNVERIFIED, ' +

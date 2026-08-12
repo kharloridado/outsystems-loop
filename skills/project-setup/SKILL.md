@@ -177,6 +177,14 @@ Two things to state while you are here:
 | Figma MCP | a small read against the library key succeeds | connect it; **blocks the loop entirely** |
 | `gh` | `gh auth status` | `gh auth login`; blocks findings + handovers + PRs |
 | Browser | §8's harness smoke test | `npm install`; blocks the fidelity gate |
+| CI | `.github/workflows/verify.yml` present | it ships with the template; **needs no secrets** |
+
+**On CI** — the template ships a `Verify` workflow that re-runs the deterministic gate and the
+fidelity regression check on every push. It needs **no API key and no secrets**: the expensive
+judgment happens once at build time and is frozen in each item's `measurements.json`, so CI only
+asks "did this change?", which is arithmetic. Tell the user it exists, and recommend enabling
+**"Require branches to be up to date before merging"** on `main` — that makes GitHub force a
+re-verify whenever the base moves, closing the stale-PR hole with no moving parts.
 
 Report anything still missing in §9 with the consequence named, not just the fact.
 

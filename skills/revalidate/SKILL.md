@@ -1,0 +1,116 @@
+---
+name: revalidate
+description: Re-run the checker against an already-built deliverable without rebuilding it — judge an existing artifact, item, or pull request and report the verdict. Use when review feedback needs re-checking, after a hand-edit or a fixup commit, when CI flags a fidelity regression, when a PR's measurements look stale because main moved under it, or whenever someone asks to re-check / re-validate / re-verify a component or a PR rather than build a new one.
+---
+
+# revalidate — judge again, without building again
+
+`/outsystems-loop:revalidate <item-id | PR number | artifact path>`
+
+Runs **`@outsystems-loop:checker`** against an artifact that already exists and reports the
+verdict. **It never invokes the maker and never edits source.**
+
+## Why this exists
+
+The checker used to have exactly one caller: `per-item-build.md`, inside the loop, at build time.
+So the only way to re-answer a question about existing code was to rebuild it — paying for a full
+maker pass to re-judge something nobody wanted changed. Worse, a rebuild *can* change the artifact,
+which means you no longer know whether the verdict moved because the judgment differed or because
+the code did.
+
+Re-judging and re-building are different questions. This answers the first one only.
+
+## When to reach for it
+
+| Situation | Why not a rebuild |
+|---|---|
+| Review feedback that is a **question**, not a change ("is this contrast really fine?") | nothing needs building |
+| A hand-edit or fixup commit on the branch | the build-time verdict no longer describes the code |
+| CI flagged a fidelity regression | you want the judgment, not just the arithmetic |
+| `main` moved under an open PR | re-measure against what would actually merge |
+| A verdict looks wrong | re-judging a rebuilt artifact confounds two variables |
+
+For an actual **change** to the artifact, do not use this — put the feedback on the PR, set the
+item back to `queued`, and let the loop rebuild.
+
+## Procedure
+
+### 1. Resolve the target to an item and a ref
+
+Accept any of: an item id (`cmp-button`), a PR number (`33`), or an artifact path
+(`src/blocks/uswds-button.css`). Resolve to the item in `loop/state.json` and its frozen ref at
+`loop/refs/<id>/`.
+
+For a PR number: `gh pr view <n> --json headRefName,files,body` — the item id is in the title/body
+the loop wrote, and `git switch` to its head before judging. **Judge the code that is actually on
+the branch**, not whatever is in the working tree.
+
+> **No ref ⇒ BLOCKED. Stop.** Never substitute the artifact's own prose, a screenshot, or live
+> Figma. Without the frozen ref the checker grades the maker against the maker's own output, which
+> is the one failure the whole ref mechanism exists to prevent. Say which item, say the ref is
+> missing, and stop — do not improvise a spec.
+
+Check ref staleness too: if the ref's recorded Figma **file key** differs from
+`project.config.json → figma.fileKey`, the ref is stale (`needs-re-ref`), not spec. Libraries get
+forked and silently re-versioned. Report it and stop; re-freezing needs Figma, which is the
+orchestrator's job, not this skill's.
+
+### 2. Make sure the harness is sound before judging
+
+A gate that cannot measure returns `unverified`, and `unverified` caps at FAIL — so a broken
+harness looks exactly like a broken component. Rule it out first:
+
+```bash
+npm run build:theme          # check:config → assemble → validate:theme
+git submodule status         # a leading `-` means vendor/outsystems-ui is not checked out
+```
+
+If `vendor/outsystems-ui/` is missing, `git submodule update --init && npm run build:osui` **before**
+judging. Otherwise the preview 404s where the framework should be, the cascade silently falls back,
+and every measurement describes a page nobody will ever see.
+
+### 3. Delegate to the checker
+
+Hand it the item, its ref, and the artifact. It runs its own deterministic gate, authors or reuses
+`loop/refs/<id>/probes.json`, runs `measure-fidelity.mjs`, applies risk-tiered depth, and
+adversarially challenges every finding before confirming it.
+
+It returns VERDICT, RISK-TIER, DET-GATE, VISUAL, MEASUREMENTS, CONFIDENCE, CRITIQUE,
+FINDINGS-CONFIRMED, FINDINGS-CHALLENGED-OUT, DECISION-LOG — the same contract as in the loop, so
+the output is comparable with the verdict already in the PR.
+
+### 4. Report, and route findings the same way the loop does
+
+- **PASS** — say so, and note anything that changed since the PR's recorded verdict. If the item
+  was `needs-human`, it may now move to `ready_for_review`; record `visual`, `det_gate`,
+  `confidence` and the new `decision_log` on the item in `loop/state.json`.
+- **FAIL (drift)** — the build no longer matches the ref. **Drift is never a finding**: it goes
+  back to the maker. Report the MEASUREMENTS table and say the item needs a rebuild.
+- **FAIL (subjective)** — report the CRITIQUE. Do not fix it here.
+- **BLOCKED** — missing or stale ref, per step 1.
+
+**Findings** follow the loop's rules exactly: confirmed ones are deduped by `[node:<id>]` and filed
+as Bugs; challenged-out ones go to `findings/findings-register.md` as `not-reproduced` with the
+usage evidence, and never become bugs. Never re-file anything in
+`knownFalsePositiveClasses`, and never raise a finding against a convention whose status is not
+`confirmed`.
+
+### 5. Optionally post it to the PR
+
+When the target was a PR and the user wants it recorded, add a comment — the fresh verdict, the
+MEASUREMENTS table, and **the commit sha it was judged at**, because a verdict with no sha is the
+same stale-snapshot problem this skill exists to fix.
+
+Ask before posting. A PR comment is visible to everyone on the repo.
+
+## Rules
+
+1. **Never invoke the maker.** If the artifact needs changing, say so and stop.
+2. **Never edit source, tokens, handovers or the register** — the checker's own constraint. Only
+   the gate's scratch artifacts under `loop/refs/<id>/` may be written.
+3. **Never judge without a ref.** BLOCKED is a real, correct outcome.
+4. **Never merge, approve, or move an item to a human-owned state.** A re-check is evidence for a
+   human, not a substitute for one.
+5. **Never report a verdict without saying which commit it was judged at.**
+6. **Never relax the gate to get a green.** `unverified` from a broken harness is fixed by fixing
+   the harness.
