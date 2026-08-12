@@ -83,8 +83,16 @@ The four build skills share one procedure — `skills/design-loop/references/per
 the build is identical whether the queue is a signed inventory or a GitHub Project board. What
 changes is where work comes from and where it goes.
 
-A consuming project opts in by setting `project.config.json` → `board.owner` and `board.number`.
-It must also provide:
+A consuming project opts in by setting `project.config.json` → **`board.drivesLoop: true`**. The
+pointer (`board.owner` / `board.number` / `board.url`) says *where* the board is; `drivesLoop` says
+*whether the loop reads it*. They are deliberately separate, so a project can keep a board as a
+human tracker — pointer set, `drivesLoop: false` — and still run `design-loop` unattended. Keying
+board-mode off the pointer alone (the behaviour up to v1.2.0) made every project that merely owned
+a board un-runnable in a cloud routine: the loop diverted to `board-advance`, hit GraphQL-only
+Projects v2 through an egress proxy that refuses it, and died before reaching the maker on every
+run. `board-advance` now refuses outright unless `drivesLoop` is `true`.
+
+A board-driven project must also provide:
 
 - **the eight `Status` lanes**, in order: `Backlog · Ready · In Progress · Ready for Review ·
   Approved · Handover · Done · Blocked`, plus the `FigmaNode`, `Branch`, `Runner`, `Tier`, `Level`

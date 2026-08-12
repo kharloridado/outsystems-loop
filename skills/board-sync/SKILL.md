@@ -25,6 +25,14 @@ Read first: `../design-loop/references/status-map.md` and
 
 1. **Reconciliation rewrites `state.json`, never the board.** The board owns intent, git owns
    content, `state.json` is a cache of both (`status-map.md`).
+1a. **…except the queue, when `board.drivesLoop` is `false`.** Then `items[].status` is not a
+   cache of a lane — it *is* the queue, and `loop/goal.md`'s signed inventory is the scope. In
+   that configuration **never write `queued` (or away from `queued`) because of a lane**:
+   mirror the observed lane into `items[].board_status` instead, report the divergence, and
+   leave `items[].status` to the signed promotion path. Rewriting the queue from a lane here
+   silently re-creates board-as-queue — the exact governance the project turned off — and lets
+   a drag promote work no scope owner signed for. Everything else on the item (the git-derived
+   fields, `pr`, `merged_sha`, `handover_issue`) reconciles normally.
 2. **Never move a card to `Approved` or `Done`** — including "to correct" a disagreement.
 3. **Only `--reclaim-stale` moves a card at all**, and only out of `In Progress`.
 4. A card is stale only if its claim is older than `board.staleAfterMinutes` (default 120)
@@ -38,6 +46,7 @@ For every board item, compare three sources and correct `state.json` where it is
 |---|---|
 | What lane is it in? | the board |
 | Does the commit / branch / merge exist? | git |
+| **Is this item queued to build?** | the board's `Ready` lane when `drivesLoop: true`; **`loop/goal.md` + `items[].status` when `drivesLoop: false`** (rule 1a) |
 | Everything else | `state.json`, which is only ever a cache |
 
 Report the drift you corrected, and anything you could not explain. The failure this catches

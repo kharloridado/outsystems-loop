@@ -3,17 +3,39 @@ description: Run the autonomous Figma -> OutSystems design loop until the goal i
 ---
 Run the design loop, governed by this project's CLAUDE.md and the outsystems-* skills.
 
-**Board-driven mode.** If `project.config.json.board.owner` and `.number` are set, this project's
-queue is a GitHub Project board, not `state.json`. Use `board-advance` (Ready → build → Ready for
-Review), `board-ship` (Approved → merged to main → handover Task) and `board-sync` (reconcile)
-instead of this skill. The build itself is identical — all of them follow
-`references/per-item-build.md`. See `references/status-map.md` for the lanes.
+**Board-driven mode — decided by `board.drivesLoop`, NOT by the board pointer.** Read
+`project.config.json` → `board` and check the two halves separately:
+
+| | Meaning | Effect on this skill |
+|---|---|---|
+| `board.owner` + `.number` + `.url` (the **pointer**) | *where* the board is | none — a pointer alone never diverts the loop |
+| `board.drivesLoop` (the **mode**) | whether the board is the work **queue** | `true` → use `board-advance` instead of this skill |
+
+**Only `drivesLoop: true` diverts you.** In that case the queue is the board's `Ready` lane:
+use `board-advance` (Ready → build → Ready for Review), `board-ship` (Approved → merged to
+main → handover Task) and `board-sync` (reconcile) instead of this skill. The build itself is
+identical — all of them follow `references/per-item-build.md`. See `references/status-map.md`
+for the lanes.
+
+**If `drivesLoop` is `false` or absent, this skill is the right one and you must not read the
+board at all** — not to pick work, not to check a lane, not to "confirm" a status. The queue
+is `loop/goal.md`'s signed inventory plus `loop/state.json` `items[].status`, and an item is
+eligible when its status is `queued`. A populated pointer with `drivesLoop: false` is the
+supported configuration for a board that is a **human view only**.
+
+Why the split exists, stated plainly: Projects v2 is GraphQL-only and unreachable from a
+Claude Code cloud routine — no `gh` on PATH, no `project_*` tool in the cloud GitHub MCP, no
+GraphQL passthrough, and raw GraphQL to api.github.com refused by the egress proxy. Keying
+board-mode off the *pointer* therefore made every project that merely owned a board
+un-runnable in the cloud: the loop diverted to `board-advance` and died before reaching the
+maker, silently, on every run. Pointer says where the board is; `drivesLoop` says whether the
+loop reads it.
 
 Read `project.config.json` (the project's values — `classPrefix`, `jsNamespace`, `conventions` with their `confirmed|assumed|TBD` status, `knownFalsePositiveClasses`), `loop/goal.md` (goal, Figma URL + file key, mode, scope, signed-off inventory, checkpoints, caps) and `loop/state.json` (queue + progress).
 
 ## Pre-flight (every run — cheap, and it has caught real drift)
 1. **Reconcile state against git.** `state.json` can go stale while commits have already shipped later tiers. Compare the queue's `status` values against what is actually committed on the loop branch before advancing; fix state first, and say so in the REPORT.
-2. **Confirm the inventory of record.** No item enters the queue without a row in it. Which artifact that is comes from `goal.md`'s **Inventory source**: `artifact` means the canonical, client-confirmed component inventory named there; `board` means the GitHub Project card itself, signed by a scope owner having moved it to `Ready` — in which case stop and use `board-advance`, which is the skill that reads the board. Either way, building speculatively is how fully-finished components get thrown away.
+2. **Confirm the inventory of record.** No item enters the queue without a row in it. Which artifact that is comes from `goal.md`'s **Inventory source**: `artifact` means the canonical, client-confirmed component inventory named there; `board` means the GitHub Project card itself, signed by a scope owner having moved it to `Ready` — in which case `board.drivesLoop` must be `true`, and you stop and use `board-advance`, which is the skill that reads the board. (`Inventory source: board` with `drivesLoop: false` is a misconfiguration: say so and stop, rather than guessing which one the project meant.) Either way, building speculatively is how fully-finished components get thrown away.
 3. **Check the library file key.** If `goal.md`'s Figma file key differs from the key recorded in an item's frozen ref, that ref is stale → mark the item `needs-re-ref` and re-snapshot before building on it. Design libraries get forked ("Main Library (2)") and silently re-version values.
 
 ## Phase 0 — Tokens (library mode, runs once)

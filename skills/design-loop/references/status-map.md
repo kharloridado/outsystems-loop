@@ -48,6 +48,28 @@ Concretely:
 - `board-sync` is the only thing that resolves a disagreement, and it always resolves it by
   **rewriting `state.json`, never by moving a card**.
 
+## When the board does not drive the loop (`board.drivesLoop: false`)
+
+Everything above assumes the board is the queue. When `project.config.json` → `board`
+carries a pointer but `drivesLoop` is `false`, the board is a **human view** and the sentence
+"the board is authoritative for intent" no longer holds for the one thing that matters:
+
+> **`loop/goal.md`'s signed inventory is authoritative for scope. `items[].status` is
+> authoritative for queue position. The repository is still authoritative for content. The
+> board is authoritative for nothing the loop reads.**
+
+Concretely, in that configuration:
+
+- The lane→status mapping above becomes a **mirror**, not a source. Record an observed lane
+  in `items[].board_status`; never let it write `items[].status`.
+- `Ready` promotes nothing. A scope owner promotes work by putting a row in the signed
+  inventory and setting `items[].status` to `queued` — a git-reviewable change with an
+  author, which is strictly more accountable than a lane move Projects v2 will not tell you
+  the actor for.
+- `Approved` still means something, but only to `board-ship`, which a human runs locally.
+- Divergence between a lane and `items[].status` is **expected and harmless**. Report it;
+  do not "fix" it in either direction.
+
 ## The rule that has no exception
 
 **No agent ever moves a card into `Approved` or `Done`** — not on a checker PASS, not to
