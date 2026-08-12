@@ -26,8 +26,28 @@ browser. Both are interactively authenticated. Without them the checker correctl
 `VISUAL: unverified` and nothing passes — that is the gate working, not a configuration
 problem. Run this locally or in-session. `board-ship` is the stage that can be scheduled.
 
+## Entry gate — check this before anything else
+
+Read `project.config.json` → `board.drivesLoop`.
+
+**If it is not exactly `true`, refuse and stop.** Print one line naming the setting and
+pointing at `design-loop`, do not claim a card, do not read a lane, do not touch git:
+
+```
+board-advance refused: project.config.json → board.drivesLoop is false (the board is a
+human view here, not the work queue). The queue is loop/goal.md's signed inventory +
+loop/state.json items[].status. Use /outsystems-loop:design-loop instead.
+```
+
+A populated board **pointer** (`owner`/`number`/`url`) is *not* consent to run this skill —
+the pointer says where the board is, `drivesLoop` says whether the loop reads it. Projects
+that keep a board purely as a human tracker set the pointer and leave `drivesLoop` false
+precisely so this stage stays off; running anyway builds work nobody queued and writes lanes
+the project has declared read-only.
+
 ## Rules that override any judgment call
 
+0. **Never run at all when `board.drivesLoop` is not `true`** — see the entry gate above.
 1. **Never move a card to `Approved` or `Done`.** This skill writes only `In Progress`,
    `Ready for Review` and `Blocked`.
 2. **Never build a card the scope owner has not moved to `Ready`, and never move a card into
