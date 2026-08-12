@@ -48,7 +48,7 @@ Fidelity is a **measurement**, not an opinion. Do this on every item that render
 The measurement runs through one script, shipped with this plugin:
 
 ```bash
-node "$CLAUDE_PLUGIN_ROOT/scripts/measure-fidelity.mjs" \
+node build/gate/measure-fidelity.mjs \
   --probes loop/refs/<item-id>/probes.json \
   --out    loop/refs/<item-id>/measurements.json \
   --screenshot loop/refs/<item-id>/rendered.png

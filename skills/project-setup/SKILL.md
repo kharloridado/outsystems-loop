@@ -338,7 +338,7 @@ to `unverified` and fails every item:
 cat > /tmp/smoke.json <<'JSON'
 { "probes": [ { "name": "body", "selector": "body", "props": ["font-family", "color"] } ] }
 JSON
-node "$CLAUDE_PLUGIN_ROOT/scripts/measure-fidelity.mjs" --probes /tmp/smoke.json
+node build/gate/measure-fidelity.mjs --probes /tmp/smoke.json
 ```
 
 Exit `0` means a browser was found, the preview served, and the cascade was complete. Exit `4`

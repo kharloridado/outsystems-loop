@@ -144,7 +144,7 @@ never actually happened. A component shipped with an icon at 1.06:1 contrast and
 **our source was right; only the computed style was wrong**, and nothing in the loop was looking at
 the computed style.
 
-**It runs headless, from Node** — `scripts/measure-fidelity.mjs`, driving Playwright. That is what
+**It runs headless, from Node** — `build/gate/measure-fidelity.mjs`, driving Playwright. That is what
 makes an unattended run able to return a real verdict. The gate used to go through an editor-only
 Chrome extension, so every scheduled run reported `unverified`, `unverified` caps at FAIL, and the
 nightly loop could never hand over finished work. The identical command now runs at a keyboard, in
@@ -161,7 +161,7 @@ The checker's verdict is written into the PR at build time and never re-computed
 commit, or a token changed on `main` after the branch was cut, would leave the PR carrying a
 measurement that no longer describes what would merge.
 
-`scripts/compare-measurements.mjs` closes that. The `measurements.json` the checker commits with
+`build/gate/compare-measurements.mjs` closes that. The `measurements.json` the checker commits with
 each item becomes a **baseline**; re-running the same probes later and diffing against it answers a
 strictly narrower question that needs no judgment at all:
 
@@ -174,6 +174,23 @@ strictly narrower question that needs no judgment at all:
 That makes a CI gate possible with **no API key and no tokens spent**, and it turns every committed
 `probes.json` into a permanent visual regression test — the suite grows with each deliverable, so a
 token change that breaks component #3 is caught while building component #9.
+
+> ### Why both scripts live in the TEMPLATE, not in this plugin
+>
+> They were here first, and CI proved that wrong. This plugin repo is **private**; a consuming
+> project may be **public**. A workflow in the project cannot clone a private plugin without a PAT,
+> and putting a token for a private repo into a public repo's CI is the wrong trade — so the gate
+> failed on its very first run with `could not read Username for 'https://github.com'`.
+>
+> The deeper point is that these two files are not *behaviour*. They are deterministic Node tooling
+> that measures and diffs, exactly like `build-theme.mjs` and `validate-theme.mjs`, and they sit in
+> `build/gate/` beside them. The plugin holds the **instructions** for using them — when to probe,
+> what a drift means, what may never be relaxed — which is the part that actually goes stale when
+> copied. One copy of the script, in the repo that runs it; one copy of the judgment, here.
+>
+> Consequence: `build/gate/` ships with the template, so an existing project picks up an
+> improvement by pulling the scaffold, not by `/plugin update`. That is the same trade every other
+> `build/` script already makes.
 
 The comparison is **typed by stability**, and that detail is load-bearing: computed strings
 (colour, `font-family`, `font-size`, radius, weight) are environment-stable and diff exactly, while

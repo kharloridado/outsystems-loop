@@ -84,7 +84,7 @@ RISK-TIER and a DECISION-LOG.
 Delegate to `@outsystems-loop:checker` to validate. The checker runs a deterministic gate
 FIRST (`npm run build:theme` exit 0 + schema/contrast), then a **rendered-fidelity gate** — it
 authors `<ref_dir>/probes.json` from the ref and runs
-`node "$CLAUDE_PLUGIN_ROOT/scripts/measure-fidelity.mjs"`, a headless browser that measures every
+`node build/gate/measure-fidelity.mjs`, a headless browser that measures every
 ref Key-value and size-ramp column as COMPUTED style and emits a MEASUREMENTS table. It scales
 depth to the item's risk tier and adversarially challenges every finding before confirming it. It
 returns VERDICT, RISK-TIER, DET-GATE, VISUAL, MEASUREMENTS, CONFIDENCE, CRITIQUE,
