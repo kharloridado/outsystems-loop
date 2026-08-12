@@ -4,10 +4,14 @@ The build procedure for **exactly one** work item. Shared, so it stays identical
 queue came from a Figma audit (`design-loop`) or from the GitHub Project board
 (`board-advance`).
 
-**This procedure does no GitHub bookkeeping.** It does not create issues, add items to a
-project, attach sub-issues or move board lanes. It builds, judges, commits, and returns an
-outcome; the caller decides what that means for its own tracker. That split is deliberate —
-the two callers want different bookkeeping from the same build.
+**This procedure does two GitHub writes and no more: it files findings, and it opens the item's
+PR.** It does not create handover issues, add items to a project, attach sub-issues or move board
+lanes. It builds, judges, commits, opens a PR, and returns an outcome; the caller decides what
+that means for its own tracker.
+
+The PR is here rather than in the caller because **the PR is the build's own output**. Its body is
+the maker's and checker's reasoning, and that reasoning exists only at this moment — deferring it
+to the caller is how it used to end up in `state.json` instead of in front of a reviewer.
 
 ---
 
@@ -22,7 +26,8 @@ The caller supplies:
 | `spec_text` | A written spec of record, when there is no `node` |
 | `tier`, `level` | Dependency position and escalation level (L1–L5) |
 | `artifact` | Target path, e.g. `src/blocks/<prefix>-button.css` |
-| `branch` | The branch to commit on — the caller has already checked it out |
+| `branch` | The branch to commit on — the caller has already cut it fresh from `origin/main` |
+| `base` | The branch the PR targets; `main` unless the caller says otherwise |
 | `ref_dir` | Where to freeze the design ref, normally `loop/refs/<id>/` |
 | `spec_deltas` | Optional, ordered. Extra requirements appended after the ref, newest last |
 
@@ -32,7 +37,7 @@ Return one of these, with the stated payload. The caller routes on it:
 
 | Outcome | Meaning | Payload |
 |---|---|---|
-| `PASS` | Built, checked, committed | `sha`, `risk_tier`, `det_gate`, `visual`, `confidence`, `decision_log`, `handover_path`, `findings_confirmed[]`, `findings_challenged_out[]` |
+| `PASS` | Built, checked, committed, PR open | `sha`, `pr_url`, `risk_tier`, `det_gate`, `visual`, `measurements`, `confidence`, `decision_log`, `handover_path`, `findings_confirmed[]`, `findings_challenged_out[]` |
 | `FAIL-CAPPED` | Ran out of rounds on a fidelity FAIL | `critique`, `rounds` |
 | `BLOCKED-NO-REF` | No design reference could be frozen | `reason` |
 | `BLOCKED-STALE-REF` | The ref's Figma file key ≠ the project's | `ref_key`, `project_key` |
@@ -77,12 +82,19 @@ RISK-TIER and a DECISION-LOG.
 ## 3. Checker
 
 Delegate to `@outsystems-loop:checker` to validate. The checker runs a deterministic gate
-FIRST (`npm run build:theme` exit 0 + schema/contrast), then a **rendered-fidelity gate**
-(`npm run preview` + a browser: measure every ref Key-value and size-ramp column against the
-COMPUTED style, emit a MEASUREMENTS table), scales depth to the item's risk tier, and
-adversarially challenges every finding before confirming it. It returns VERDICT, RISK-TIER,
-DET-GATE, VISUAL, MEASUREMENTS, CONFIDENCE, CRITIQUE, FINDINGS-CONFIRMED,
-FINDINGS-CHALLENGED-OUT, DECISION-LOG.
+FIRST (`npm run build:theme` exit 0 + schema/contrast), then a **rendered-fidelity gate** — it
+authors `<ref_dir>/probes.json` from the ref and runs
+`node build/gate/measure-fidelity.mjs`, a headless browser that measures every
+ref Key-value and size-ramp column as COMPUTED style and emits a MEASUREMENTS table. It scales
+depth to the item's risk tier and adversarially challenges every finding before confirming it. It
+returns VERDICT, RISK-TIER, DET-GATE, VISUAL, MEASUREMENTS, CONFIDENCE, CRITIQUE,
+FINDINGS-CONFIRMED, FINDINGS-CHALLENGED-OUT, DECISION-LOG.
+
+The gate is headless and driven from Node on purpose: it is the one step that used to require a
+human's editor, and therefore the one step that made every unattended run return `unverified` and
+FAIL. If it reports no usable browser (`npm install` never ran) or a failed stylesheet request
+(`vendor/outsystems-ui/` not built), that is a **harness fault to fix and re-run** — not a design
+verdict, and never a reason to relax the gate.
 
 Route the verdict:
 
@@ -102,17 +114,44 @@ Route the verdict:
 
 ## 4. On PASS
 
-Record on the item: `risk_tier`, `det_gate: pass`, `visual: pass`, `confidence`, and
-`decision_log` (maker + checker). Status `built`.
+Record on the item: `risk_tier`, `det_gate: pass`, `visual: pass`, `measurements`, `confidence`,
+and `decision_log` (maker + checker). Status `built`.
 
 Write the handover document (`handover/<artifact>.md`) with the DECISION-LOG in a collapsed
 `<details>` ("Why / alternatives ruled out"), and run `node build/embed-handover-code.mjs` so
 it carries the verbatim code to paste into ODC. Update the Style Guide page.
 
-Commit on `ITEM.branch` using an `outsystems-git-helpers` message. Return `PASS`.
+Commit on `ITEM.branch` using an `outsystems-git-helpers` message.
 
-**Do not** create issues, add board items, attach sub-issues or move lanes — the caller owns
-all of that.
+### Then open the PR — the item is not done until a human can review it
+
+```bash
+git push -u origin "$BRANCH"
+gh pr create --base "${ITEM_BASE:-main}" --head "$BRANCH" \
+  --title "[deliverable] <Component> — <artifact kind> (item <id>)" \
+  --body-file "$BODY" --label deliverable
+```
+
+Compose `$BODY` from **`pr-body.md`** — every heading, in its order, decision logs verbatim,
+MEASUREMENTS table included, fidelity status stated in the open when it is not `pass`. Write it
+with a heredoc to a file and use `--body-file`; a long `--body` argument mangles the tables.
+
+Then set the item's status to `ready_for_review` and record `pr_url`. Return `PASS`.
+
+**Never merge, and never approve.** The loop stops at an open PR — that is the human's signature
+(hard rule 10). **Never open the handover Task here** either: a handover says "paste this into
+ODC", and nothing may say that about code sitting on an unmerged branch. The caller opens it after
+the merge.
+
+**Do not** create handover issues, add board items, attach sub-issues or move lanes — the caller
+owns all of that.
+
+### If the push or the PR fails
+
+A PASS whose PR never opened is work nobody will see. Do not swallow it: leave the item `built`
+with `pr_error` set to the exact `gh` output, say so in the report, and let the caller decide.
+Common causes worth naming in the error — no `origin` remote, no `gh auth`, the branch already has
+an open PR (reuse it, and say you did), or a protected base rejecting the push.
 
 ## 5. Findings — file only what survived the challenge
 
@@ -130,5 +169,9 @@ the caller's tracker, and both callers want them filed identically.
 ## 6. Persist
 
 Write `loop/state.json` after every item and increment `iteration`. Keep per-item `rounds`,
-`risk_tier`, `det_gate`, `visual`, `confidence`, `decision_log` and per-finding `disposition`,
-so the run's Review metrics can be computed.
+`risk_tier`, `det_gate`, `visual`, `confidence`, `decision_log`, `pr_url` and per-finding
+`disposition`, so the run's Review metrics can be computed.
+
+Keep `loop/refs/<id>/probes.json`, `measurements.json` and `rendered.png` — commit them with the
+item. They are the evidence behind the PR's Gates section, and a reviewer who doubts a number
+needs to be able to re-run the exact probe rather than take the table's word for it.
