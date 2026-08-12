@@ -182,9 +182,33 @@ Two things to state while you are here:
 **On CI** — the template ships a `Verify` workflow that re-runs the deterministic gate and the
 fidelity regression check on every push. It needs **no API key and no secrets**: the expensive
 judgment happens once at build time and is frozen in each item's `measurements.json`, so CI only
-asks "did this change?", which is arithmetic. Tell the user it exists, and recommend enabling
-**"Require branches to be up to date before merging"** on `main` — that makes GitHub force a
-re-verify whenever the base moves, closing the stale-PR hole with no moving parts.
+asks "did this change?", which is arithmetic.
+
+**Offer to protect `main` while you are here** — it is the step that makes CI *mean* something,
+and it needs the user's say-so because it changes how their repo behaves:
+
+```bash
+R=<owner/repo>
+gh api --method PUT "repos/$R/branches/main/protection" --input - <<'JSON'
+{ "required_status_checks": { "strict": true, "contexts": ["verify"] },
+  "enforce_admins": false, "required_pull_request_reviews": null, "restrictions": null }
+JSON
+gh api --method PATCH "repos/$R" -f allow_update_branch=true
+```
+
+- `strict: true` **is** "Require branches to be up to date before merging" — GitHub refuses a merge
+  whose branch has not been re-verified against current `main`, which closes the stale-PR hole with
+  no moving parts.
+- `allow_update_branch` is not optional alongside it. Without it GitHub does not offer the **Update
+  branch** button, so satisfying the requirement means updating branches by hand — friction this
+  workflow exists to remove.
+- `enforce_admins: false` on purpose: the human keeps an emergency override. Nothing automated can
+  use it, because the loop never merges at all.
+- `required_pull_request_reviews: null` on purpose: GitHub does not let anyone approve their own PR,
+  so requiring a review on a solo engagement is a deadlock, not a gate.
+
+Warn about the one real cost: merging one PR puts every other open PR behind, so a night that
+produced five PRs means four **Update branch** clicks. That is the re-verify working.
 
 Report anything still missing in §9 with the consequence named, not just the fact.
 
