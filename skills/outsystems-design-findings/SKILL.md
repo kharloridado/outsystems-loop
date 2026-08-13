@@ -30,8 +30,17 @@ Not every accessibility issue is a finding. The test is: **does resolving it cha
 | Color used isn't in the brand palette | **FLAG** | Brand conformance — not ours to redefine |
 | Hard-coded value with no matching design token | **FLAG** | Token governance — designer should snap to scale or we add a token deliberately |
 | Touch target too small but the design specifies a fixed size | **FLAG** | Enlarging changes the layout the designer specified |
+| A theme token shares a NAME with an OutSystems UI custom property (`--color-primary`, `--space-m`) | **NOT A FINDING** | That collision is the re-branding mechanism — the theme loads last so its `:root` wins. Filing it as a defect, or recommending a `--<prefix>-*` namespace, is backwards. |
+| The theme restyles a framework class (`.btn`, `.card`) rather than adding a prefixed one | **NOT A FINDING** | This is the required approach, not a violation of "never edit OutSystems UI". Editing means changing the framework's files. |
+| A re-pointed framework token moves values nobody chose (`--space-m` 24px → 16px, 146 consumers) | **FLAG** as a *mapping question* | Which step of our scale is `--space-m`? A designer answers it. Severity reflects blast radius; the recommendation is never "add a prefix". |
 
 When in doubt: if the fix would make the built UI look different from the approved mockup, it's a **flag**, not a fix.
+
+**The inverse trap, which has cost this loop a whole card.** A finding must describe something
+*wrong*, not something merely *powerful*. "The theme redefines 17 framework properties" is a
+description of a theme doing its job. Before filing anything about overrides, ask whether the
+recommendation, if followed, would leave the framework's widgets unbranded — if so, the finding
+is the mistake.
 
 ## Finding types
 

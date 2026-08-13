@@ -7,7 +7,8 @@ Working reference for daily use.
 - **OutSystems UI:** v2.28.1+, BSD-3, 70+ patterns
 - **IDE:** Service Studio (O11) / ODC Studio (ODC)
 - **CSS:** kebab-case `:root` variables, BEM for custom classes
-- **Customization:** Override tokens + ExtendedClass + Web Components for L5
+- **Customization:** Override tokens → restyle the framework's own classes → ExtendedClass for
+  what it doesn't name → Web Components for L5
 
 ## Architecture: O11 vs ODC
 
@@ -70,7 +71,8 @@ Motion:     --animation-{duration|function}-*
 ## Escalation
 - **L1** Token change
 - **L2** Existing utility class
-- **L3** ExtendedClass + BEM modifier
+- **L3a** Restyle the framework's own class (`.btn`, `.btn-primary`, `.card`) — the default
+- **L3b** ExtendedClass + BEM modifier — only where the framework ships no class
 - **L4** Wrap pattern in custom Block
 - **L5** Vanilla JS Web Component + Block wrapper
 - **L6** Fork OutSystems UI (never)

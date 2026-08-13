@@ -20,10 +20,19 @@ If something can be reused outside its parent, it's a **block**:
 
 ## Attaching to OS UI patterns
 
-Every OS UI pattern has `ExtendedClass`:
+**First: does the framework already name what you're styling?** If it does, restyle that name
+and attach nothing. `.btn`, `.btn-primary`, `.card`, `.tag`, `.osui-tabs__header-item` are
+OutSystems UI's own classes; overriding them from the theme brands every instance in the app
+with nothing for a developer to remember. A prefixed BEM class beside one of those is a second
+system that only paints where someone typed it in.
+
+**Then, for variants the framework has no class for**, every OS UI pattern has `ExtendedClass`:
 ```
 ExtendedClass = "acme-card acme-card--featured"
 ```
+
+BEM is the vocabulary for what the framework doesn't name. It is not a replacement vocabulary
+for what it does.
 
 ## The 7 commandments
 

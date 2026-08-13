@@ -28,7 +28,7 @@ Both are valid for L4-L5 customization. Knowing when to choose which is critical
 
 ```
 Q: Does an OS UI pattern provide the structure I need?
-   YES → L3 (ExtendedClass) or L4 (Wrap in Block)
+   YES → L3a (restyle its own classes) / L3b (ExtendedClass) / L4 (Wrap in Block)
    NO  → Continue
 
 Q: Is this primarily a UI primitive (no business logic)?

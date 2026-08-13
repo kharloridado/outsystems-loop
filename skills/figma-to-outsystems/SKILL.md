@@ -124,13 +124,15 @@ Invoke `outsystems-style-guide-doc`. Generated page **must** include the Accessi
 
 ## Hard rules (never break)
 
-1. Never edit the OutSystems UI module directly
+1. Never edit the OutSystems UI module directly. (Overriding its classes and its tokens from the
+   theme is *not* editing it — that is the job. See 16.)
 2. Never validate in Service Studio Preview alone
 3. Never hard-code design values — always `var(--token)`
 4. Never use `!important` except third-party widget overrides (with comment)
 5. Never style `[data-*]` attributes
 6. Never couple state classes (`.block.is-open`) — use modifiers (`--is-open`)
-7. Never use generic class names without stored prefix
+7. Never use generic class names *you invented* without the stored prefix. (Restyling OutSystems
+   UI's own `.btn` / `.card` is not this — see 16.)
 8. Never attach custom classes by mutating OutSystems UI's internal classes — use `ExtendedClass`
 9. Never trust Service Studio Preview
 10. Never recommend forking OutSystems UI
@@ -139,6 +141,13 @@ Invoke `outsystems-style-guide-doc`. Generated page **must** include the Accessi
 13. **Never drop a finding to avoid friction** — log it (register at minimum), even if low severity. Findings never block the build.
 14. **Findings are filed as GitHub Bugs** (Bug issue type + `bug` label).
 15. **Generated code is handed over as a GitHub Task assigned to the user** (not just pasted in chat) so they can add it into OutSystems.
+16. **Never mint a name OutSystems UI already has.** Framework has the widget class → restyle the
+    **bare** class (`.btn`, never `.acme-button.btn` — the platform never emits the second, so it
+    brands nothing until a developer types it in per widget). Framework has the variant class →
+    restyle `.btn-primary` / `.btn-large`, don't mint `--primary` / `--big`. Framework has the
+    token → redefine it; a name collision with OSUI is the re-branding *mechanism* and is **never**
+    a finding. A `<prefix>-` class is correct only where the framework has no equivalent. Then
+    check the siblings you disturbed — `.btn { height }` silently overrides `.btn-small`.
 
 ## Routing rules
 

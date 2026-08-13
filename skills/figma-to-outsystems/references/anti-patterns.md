@@ -42,17 +42,37 @@ Refuse, flag, or correct when encountered.
 /* Pick one: --is-open */
 ```
 
-### ❌ Generic class names
+### ❌ Generic class names you invented
 ```css
-.card { } .button { }
-/* USE: .acme-card, .acme-button */
+.button { }  .panel { }  .wrapper { }
+/* Names nobody owns, colliding with everything. USE: .acme-button, .acme-panel */
 ```
+**Not to be confused with restyling a framework class.** `.card` and `.btn` are *OutSystems
+UI's* names, not generic ones — targeting them is correct and required (see below).
 
-### ❌ Mirroring OS UI internal selectors
+### ❌ Shadowing a class the framework already has
+```css
+.acme-button.btn  { }             /* opt-in gate — the platform never emits .acme-button */
+.acme-button--big { }             /* .btn-large already exists */
+:root { --acme-space-m: 16px; }   /* --space-m already exists — redefine THAT */
+/* USE the framework's own name: .btn { }   .btn-large { }   --space-m: 16px; */
+```
+A prefixed class is right only where the framework has **no** name for the thing. Sharing a name
+with OutSystems UI is how a theme reaches the widgets nobody hand-edits — it is the mechanism,
+not a violation of "never edit OutSystems UI" (that rule is about editing its *files*).
+
+Then handle the siblings: `.btn { height }` silently overrides `.btn-small { height }` at equal
+specificity, later in the cascade. Map each sibling or exclude it (`.btn:not(.btn-small)`).
+
+### ❌ Hooking an OS UI *internal* wrapper
 ```css
 .osui-card__header-inner-wrapper { padding: 0; }
-/* Fragile, breaks on updates. USE ExtendedClass + own BEM. */
+/* An undocumented structural div. Fragile, breaks on updates. */
 ```
+The line between this and the entry above matters: a widget's **public** class or variant
+(`.btn`, `.btn-primary`, `.card`, `.tag`, `.osui-tabs__header-item`) is the correct override
+target; an internal wrapper the framework invented to hold a layout together is not. When
+unsure, check `src/scripts/OSFramework/OSUI/Pattern/*/Enum.ts` — named there means public.
 
 ## Workflow
 

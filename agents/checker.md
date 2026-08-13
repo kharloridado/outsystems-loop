@@ -138,7 +138,23 @@ State which depth you applied. **When unsure, round UP.**
    - **Ref staleness:** if the item's ref records a Figma *file key* different from the current library key in `loop/goal.md`, the ref is stale → **BLOCKED / needs-re-ref**. Design libraries get forked and re-versioned; a ref frozen against the old file is no longer the spec.
 2. **Tokens** — every value is a `var(--token)`; no hard-coded colors/sizes. The only allowed literals are documented fallbacks inside a Web Component `:host` chain.
 3. **BEM + naming** — the project's `classPrefix`, `block__element--modifier`, no state coupling (`.x.is-open`), no data-attribute styling, no platform-generated IDs, no unjustified `!important`.
-   - **Restyle-native check:** if the maker introduced a `<classPrefix>-` class, verify the framework doesn't already own that widget/utility. If it does, overriding the bare native class is correct and a parallel custom system is a FAIL.
+   - **Restyle-native check (run it selector by selector, not impressionistically).** For every
+     `<classPrefix>-` class the maker introduced, grep `vendor/outsystems-ui/` for the widget and
+     its variants, then judge:
+     - A `<classPrefix>-` class **gating** a framework selector — `.uswds-button.btn` — is a
+       **FAIL**. That is not an override, it is an opt-in the platform never emits: the widget
+       renders unbranded unless a developer types the class into `ExtendedClass`. The correct
+       form is the bare `.btn`.
+     - A `<classPrefix>-` **modifier that duplicates a framework modifier** — `--big` where
+       `.btn-large` exists, `--success` where `.btn-success` exists — is a **FAIL**. Map onto
+       the framework's class.
+     - A `<classPrefix>-` class for a variant the framework genuinely lacks is **correct**.
+       Verify the lack; don't take the maker's word for it.
+     - **Sibling-collateral check:** when a bare framework class is restyled, list the
+       framework's sibling modifiers and confirm each is either mapped or deliberately excluded.
+       A `.btn { height }` override at equal specificity, loaded later, silently overrides
+       `.btn-small { height }` — **measure a sibling, don't reason about it.** An unmentioned,
+       unmeasured sibling is a FAIL.
 4. **Accessibility** — contrast computed for every text/UI pair. Implementation-level items applied (focus/ARIA/keyboard/reduced-motion/targets). Design-level conflicts FLAGGED as findings, **NOT** silently fixed.
 5. **Web Component (if L5)** — registration guard, `composed:true` events, `disconnectedCallback` cleanup, `:host` fallback chain, **value-aware boolean attributes** (a presence-based `hasAttribute` check is a FAIL on ODC — the host always binds a value).
 
@@ -157,6 +173,12 @@ A finding that turns out not to be real is noise that costs a human a triage cyc
   would have settled it, is not a refutation.
 - **Is the failing pair ever actually rendered?** At what role and size? Is the colour used as *text*, or only as a background fill behind a dark label, a border, or a decoration? A value that only appears in a generated utility class nobody applies is not a finding.
 - **Do not raise anything in `knownFalsePositiveClasses`** (from `project.config.json`).
+- **A token that collides by NAME with an OutSystems UI custom property is NEVER a finding.**
+  The theme loads after the framework so its `:root` wins — that collision is the entire
+  re-branding mechanism, not a rule-1 violation, and "namespace ours to `--<prefix>-*`" is
+  the wrong recommendation. (Filed once as a high-severity bug on a real project; closed as
+  backwards.) What you MAY raise is a mapping question — *which* step of the design's scale
+  `--space-m` should be — and that is register-only, addressed to a designer.
 - **Do not raise anything whose rule is an unconfirmed convention** (see §0).
 - **Any value you RECOMMEND must be verified before it ships in a ticket.** Recompute the contrast of your own proposed replacement — a recommendation that also fails is worse than no recommendation, and it will be read by a designer as authoritative.
 - Confirm a finding only if it **survives** refutation. Record refuted ones separately as **challenged-out** (register-only, with the usage evidence) — they are NOT filed as bugs.
