@@ -64,7 +64,8 @@ contrast = (L1 + 0.05) / (L2 + 0.05)
 
 When generating output, include a comment showing the measured ratio — and when it fails, note the finding rather than editing the value:
 ```css
-.acme-button--primary {
+/* The framework's own class, restyled — not a prefixed one shadowing it. */
+.btn-primary {
   background: var(--color-primary);     /* #1A73E8 */
   color: var(--color-neutral-0);        /* #FFFFFF — contrast 4.78:1 ✓ AA */
 }
@@ -87,7 +88,7 @@ Requirements:
 
 **Default focus pattern:**
 ```css
-.acme-button:focus-visible {
+.btn:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }

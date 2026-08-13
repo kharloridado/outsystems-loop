@@ -40,8 +40,17 @@ Table of every distinct UI element identified. Three buckets:
 
 **Buckets:**
 - **✅ As-is** — OS UI pattern matches; just use it
-- **🎨 Customize** — Existing pattern with customization (L3 = ExtendedClass + BEM; L4 = wrap in custom Block)
+- **🎨 Customize** — Existing pattern with customization (**L3a = restyle the framework's own
+  class**, the default; L3b = ExtendedClass + BEM, only where the framework ships no class;
+  L4 = wrap in custom Block)
 - **🆕 Web Component** — No matching pattern → vanilla JS Web Component wrapped in OutSystems Block (L5)
+
+**L3a before L3b, always.** If OutSystems UI already names the thing — `.btn`, `.btn-primary`,
+`.card`, `.tag`, `.osui-tabs__header-item` — the audit routes it to restyling **that bare
+name**, not to a new `<prefix>-` class beside it. Classifying a native widget as "customize via
+a prefixed class" is how a theme ends up branding nothing until a developer types
+`ExtendedClass` on every instance. Check the widget SCSS **and** the pattern enums under
+`src/scripts/OSFramework/OSUI/Pattern/*/Enum.ts` before you claim the framework lacks a name.
 
 **Important:** L5 always means Web Component now. Don't suggest "build a custom Block with HTML widgets from scratch" — that's the old approach. Web Components are the user's chosen architecture.
 

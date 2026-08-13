@@ -21,6 +21,29 @@ If user provides a Figma URL:
 3. Generate :root block
 4. List which tokens are new vs. modifications
 
+## The names below collide with OutSystems UI on purpose
+
+Every variable in the right-hand column is one **OutSystems UI already declares**. Redefining it
+is the point: the theme loads after the framework, so its `:root` wins, and every OSUI widget in
+the app — including the ones this project will never open — renders in the customer's brand.
+
+So: **never namespace a token away from a framework name to dodge a collision**
+(`--acme-space-m` beside `--space-m`), and **never file a collision as a finding.** Both have
+been tried on a real project; both are backwards. A theme that shares no names with the
+framework themes nothing.
+
+What a collision *does* deserve is a recorded decision, because you are re-pointing a value the
+framework's own widgets consume. `--space-m` is read by ~146 rules in compiled OutSystems UI —
+if the design's `m` step is 16px where the framework's was 24px, every one of those rules moves.
+That is a real question for a designer — *which step of our scale is `--space-m`?* — and it
+belongs in the register with the consumer count, addressed as a mapping question. It is not a
+defect in the theme, and the answer is never "add a prefix".
+
+State in the handover which framework properties the theme re-points, and what moves as a result.
+
+A **component-scoped** token (`--acme-button-height`) is a different thing and stays prefixed:
+the framework has no name for it, so there is nothing to override.
+
 ## Token mapping (see references/full-token-list.md for complete inventory)
 
 | Figma Category | OutSystems UI Variable |

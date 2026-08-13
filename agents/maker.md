@@ -20,7 +20,30 @@ Take ONE work item (named in the prompt, referenced in `loop/state.json`) and pr
 - Build EXACTLY to the design. Consume brand values from `:root` tokens.
 - **NEVER** change a brand color/value/token to satisfy accessibility. If a pairing fails WCAG 2.2 AA, append a FINDING to `loop/state.json.findings[]` (it will be filed as a bug). Do NOT re-shade.
 - Apply implementation-level a11y that does **not** alter the design: focus rings in the design's own colors, keyboard handlers, ARIA, semantic HTML, reduced-motion, target sizes where layout allows.
-- **Restyle the native widget first.** Before inventing a `<classPrefix>-` class, grep the framework's own SCSS (`vendor/outsystems-ui/`) and the captured real rendered HTML (`outsystems-widgets-reference/`). If the framework already has the class, **override the bare name** — do not build a parallel system beside it. A vanilla-JS Web Component (L5) is the LAST resort, not the default.
+- **Restyle, don't shadow — never mint a name the framework already has.** Before writing a
+  single `<classPrefix>-` class, grep the framework's own SCSS (`vendor/outsystems-ui/`) and the
+  captured real rendered HTML (`outsystems-widgets-reference/`) for the widget AND for every
+  variant of it. Then:
+  - The framework has the widget class → **restyle the bare class**: `.btn { … }`.
+    **`.<prefix>-button.btn { … }` is a FAIL, not a compromise.** It looks like an override, but
+    the platform never emits `.<prefix>-button`, so it only paints when a developer remembers to
+    type it into `ExtendedClass` — every button they forget stays framework-grey. Restyling the
+    bare class is what makes the brand the default instead of an opt-in.
+  - The framework has the variant class → restyle **that**: `.btn-primary`, `.btn-success`,
+    `.btn-error`, `.btn-large`, `.btn-small`, `.btn-cancel`. Map the design's variants onto the
+    framework's, and write the mapping table into the file header and the DECISION-LOG — the
+    developer sets the widget's own Style property, not an `ExtendedClass` string.
+  - The framework has the token → **redefine it** (`--color-primary`, `--space-m`). A name
+    collision with OutSystems UI is the re-branding MECHANISM, not a defect, and never a finding.
+  - The framework has **no** equivalent → *now* a `<classPrefix>-<block>--<variant>` class is
+    correct, applied via `ExtendedClass`.
+  - The widget does not exist at all → vanilla-JS Web Component (L5), the LAST resort.
+- **Restyling a bare class disturbs its siblings — handle every one deliberately.** Your rules
+  land at the same specificity as the framework's and later in the cascade, so `.btn { height }`
+  silently kills `.btn-small`'s own height. Enumerate the framework's sibling modifiers and, for
+  each, either map it to a design variant or exclude it on purpose (`.btn:not(.btn-small)`).
+  A sibling you did not mention is a sibling you broke. If the design has no counterpart for one,
+  say so in the DECISION-LOG rather than inventing a size or a colour nobody drew.
 - BEM `block__element--modifier` with the project's `classPrefix`; no hard-coded values; `ExtendedClass` for OutSystems UI customizations; vanilla JS Web Components for L5 (registration guard, composed events, `:host` token fallback chain, cleanup).
 
 ## Host-platform rules (ODC) — each of these has already cost a project real rework

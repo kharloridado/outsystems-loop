@@ -26,14 +26,32 @@ Style Classes = "mt-3 px-2 text-neutral-8 d-flex"
 - Headings: `heading1-6`, `font-size-display`, `font-size-xs..2xl`
 - Visibility: `HiddenInDesktop`, `HiddenInSmartphone`, `ShowOnlyInMobile`
 
-## L3 — ExtendedClass + BEM modifier
-**When:** Visual variant of existing OS UI pattern.
+## L3a — Restyle the framework's own class
+**When:** OS UI already names this thing — the widget class or one of its variants. **This is
+the default, and most of a design system lands here.**
+
+```css
+.btn         { border-radius: var(--border-radius-soft); font-weight: var(--font-weight-bold); }
+.btn-primary { background-color: var(--color-primary); color: var(--color-base-white); }
+```
+**Effort:** minutes. **Affects:** every instance in the app, with nothing to apply — the
+developer just sets the widget's Style property.
+
+`.acme-button.btn` is **not** L3a. It gates the override behind a class the platform never
+emits, so every widget nobody hand-edits renders unbranded. Restyle the bare class.
+
+Restyling a bare class disturbs its siblings: `.btn { height }` beats `.btn-small { height }`
+on source order at equal specificity. Map every sibling or exclude it (`.btn:not(.btn-small)`).
+
+## L3b — ExtendedClass + BEM modifier
+**When:** Visual variant of an existing OS UI pattern that the framework ships **no class for**.
+Verify the gap in the widget SCSS *and* `src/scripts/OSFramework/OSUI/Pattern/*/Enum.ts`.
 
 ```
 ExtendedClass = "acme-card acme-card--featured"
 
 .acme-card--featured {
-  border: 2px solid var(--color-primary);
+  border: var(--border-size-m) solid var(--color-primary);
 }
 ```
 **Effort:** 5–15 min. **Affects:** Pattern-wide where applied.

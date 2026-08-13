@@ -16,8 +16,17 @@ Walk top to bottom. Stop at the first level that satisfies the design.
                        │ NO
                        ▼
 ┌─────────────────────────────────────────────────────┐
-│  Q: Same pattern, different look (custom variant)?  │
-│     If YES → L3: ExtendedClass + BEM modifier       │
+│  Q: Does OS UI already NAME this thing — the        │
+│     widget class, or a variant of it?               │
+│     If YES → L3a: restyle THAT class, BARE          │
+│              (.btn, .btn-primary, .card, .tag)      │
+└─────────────────────────────────────────────────────┘
+                       │ NO — framework has no name for it
+                       ▼
+┌─────────────────────────────────────────────────────┐
+│  Q: Same pattern, an EXTRA variant the framework    │
+│     ships no class for?                             │
+│     If YES → L3b: ExtendedClass + BEM modifier      │
 └─────────────────────────────────────────────────────┘
                        │ NO
                        ▼
@@ -47,15 +56,34 @@ Style Classes: "text-neutral-8 pt-2"
 ```
 **30 seconds. No CSS written.**
 
-### L3 — ExtendedClass + BEM modifier
+### L3a — Restyle the framework's own class (the default, and the common case)
+```css
+/* Every button in the app. No ExtendedClass anywhere, nothing to remember. */
+.btn         { border-radius: var(--border-radius-soft); font-weight: var(--font-weight-bold); }
+.btn-primary { background-color: var(--color-primary); color: var(--color-base-white); }
+```
+**Nothing for the developer to apply — they set the widget's own Style property.**
+
+L3a is where most of a design system lands, and skipping it is the single most common mistake
+in this whole tree. `.acme-button.btn` is **not** L3a: it is a gate on a class the platform
+never emits, so the widget renders unbranded unless someone types it in per instance. Restyling
+the bare class is what makes the brand the default instead of an opt-in.
+
+Restyling a bare class disturbs its siblings — `.btn { height }` overrides `.btn-small`'s own
+height at equal specificity, later in the cascade. Map every sibling modifier or exclude it on
+purpose (`.btn:not(.btn-small)`).
+
+### L3b — ExtendedClass + BEM modifier (only where the framework has NO class)
 ```
 ExtendedClass = "acme-card acme-card--featured"
 
 .acme-card--featured {
-  border: 2px solid var(--color-primary);
+  border: var(--border-size-m) solid var(--color-primary);
 }
 ```
-**5–15 minutes per variant.**
+**5–15 minutes per variant.** Verify the framework really lacks it first — grep the widget SCSS
+**and** `src/scripts/OSFramework/OSUI/Pattern/*/Enum.ts`, where much of the class vocabulary
+actually lives.
 
 ### L4 — Wrap pattern in custom Block
 ```
@@ -79,7 +107,9 @@ Block: ProductCard (Patterns Library)
 
 ## Healthy distribution
 - L1 / L2: 60–70%
-- L3: 20–25%
+- L3a / L3b: 20–25% — and **most of that should be L3a.** A component audit that routes a
+  widget OutSystems UI already ships to L3b is describing a parallel design system, not a
+  theme. If L3b outnumbers L3a, re-read the framework's class vocabulary before writing CSS.
 - L4: 5–10%
 - L5: 1–5%
 - L6: 0%
