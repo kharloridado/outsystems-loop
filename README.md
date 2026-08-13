@@ -29,6 +29,24 @@ project at once.
 `--scope project` checks the dependency into the repo so the whole team (and unattended loop runs)
 get the same version.
 
+### The marketplace repo must be PUBLIC for unattended runs
+
+A scheduled cloud run executes in a fresh container with **none of your GitHub credentials**. If
+the marketplace repo is private it cannot be cloned, the plugin silently never installs, and
+`installed_plugins.json` stays empty.
+
+The run does not stop. It reports that `@outsystems-loop:maker` / `:checker` and the `design-loop`
+skill are unavailable and falls back to general-purpose subagents — which have none of the
+checker's restricted toolset, none of its ordered gate (deterministic → measured fidelity →
+risk-tiered depth → adversarial finding-challenge), and none of the orchestrator's rules about
+freezing the ref before the maker runs.
+
+**Output from such a run is advisory, not a checker PASS.** Do not merge a deliverable PR from it
+as though it had passed the real gate.
+
+Declaring the plugin at project scope in `.claude/settings.json` is necessary but not sufficient —
+the declaration is only as good as the container's ability to reach the source.
+
 ## What's in it
 
 **Agents**

@@ -142,4 +142,22 @@ Summarise: cards shipped (with PR + handover links), cards left in `Approved` an
 blocked and why. If any card was left in `Approved` because a merge did not complete, say so
 first — it is the thing the human needs to act on.
 
+
+## Where the facts live: `main` answers scope, the PR head answers state
+
+Everything proving an item is shippable — `status: built`, the gate results, the `handover` body
+path, the handover file itself — is written **on the item's own branch** and does not reach `main`
+until the merge. So `loop/state.json` on `main` describes a mid-flight item as though nothing had
+happened to it: `backlog`, `pr: 0`, no handover.
+
+Read `main` for SCOPE (does the item exist, is it in the signed inventory, has it already shipped)
+and the **PR head** for READINESS. Discover the PR from the **branch** (`loop/item/<id>`), not from
+`items[].pr` — the loop does not reliably write its own PR number back, and a branch name is a fact
+GitHub can confirm.
+
+Measured on the source project, a day apart, in two different stages: the ship stage refused every
+legitimately approved card because `main` said `backlog` while the branch said `built`; the sync
+stage read a card dragged back to `Ready` as a first build rather than rework, which would have
+queued a rebuild that discarded the open PR's work.
+
 $ARGUMENTS
