@@ -23,6 +23,26 @@ work, or push past a `pause` checkpoint. Those are the human's signature.
 item with no ref goes `needs-human` rather than being built from a guess — a whole night producing
 nothing. Tell the user this while they are creating the routine, not after.
 
+## Four ways creating a routine goes wrong, all of them silent
+
+Measured on 2026-08-14, when two routines shared one cron and only one of them worked. See
+`project-setup` §7a; the short version, because every one of these fails without an error:
+
+1. **It fires into the session that created it.** That is the DEFAULT. Set
+   `create_new_session_on_fire: true`. A nightly once landed in an old plan-mode PR-review
+   conversation, which cannot write, commit or push — so the run was literally silent.
+2. **It carries no connectors.** The `connectors` parameter is unavailable on some organizations
+   and simply errors. If it does, the routine cannot reach Figma at all and must be created from
+   the claude.ai routines UI instead.
+3. **It carries no repo.** There is no repo-source parameter on the MCP path. Either create it from
+   the UI, or have the prompt's first step clone the project.
+4. **It carries no model pin,** so fired sessions can run on a weaker tier than the session that
+   designed the loop.
+
+**Every routine's first instruction is `node build/preflight.mjs`,** which repairs the harness and
+names what it cannot repair. **And verify a new routine by FIRING it** — with an override saying
+pre-flight only, build nothing — rather than waiting for its first cron to find out.
+
 ---
 
 ## 1. Loop advance — the main event

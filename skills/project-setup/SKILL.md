@@ -339,10 +339,33 @@ See **`references/routines.md`** for the exact prompts. The default set:
 | **Token drift reconcile** | weekly | Re-pulls the Figma library and PRs any token drift. Recurring forever — a design system's tokens move. |
 | **Findings digest** | daily, optional | Read-only summary of open findings by severity. |
 
-Two constraints to state honestly rather than discover later:
+### 7a. HOW the routine is created decides whether it works at all
 
-- **A routine needs the Figma connector attached**, or it cannot freeze a ref and every item goes
-  `needs-human`. Tell them to attach it when they create the routine.
+A routine that looks configured and is not costs a whole night, silently. On 2026-08-14 a USWDS
+routine created through the scheduling MCP fired on time and produced **no branch, no PR and no
+report** — it could not even say why. Walk this list; every row is a measured failure, not a
+precaution.
+
+| Must be true | Why, and what it looks like when it is wrong |
+|---|---|
+| **Fires into a FRESH session** (`create_new_session_on_fire: true`) | The default is to fire into the session that CREATED the routine. That session was in **plan mode**, which cannot write, commit or push — so a nightly landed in an old PR-review conversation and did nothing. Silent. |
+| **The Figma connector is attached** | Without it no ref can be frozen and the run has nothing to build from. **`create_trigger`'s `connectors` parameter is unavailable on some organizations** — if it errors, the routine CANNOT carry a connector and must be created from the claude.ai routines UI instead. Do not shrug this off; it is the difference between a working nightly and an empty one. |
+| **A repo source is attached** | `create_trigger` has **no repo-source parameter at all**. A routine created that way may start with an empty working directory. Either create it from the UI, or make the prompt's first step clone the repo. |
+| **The model is the one you intend** | `create_trigger` does not pin a model, so fired sessions can land on a weaker tier than the interactive session that authored the loop. Check it; the maker/checker split is demanding work. |
+| **The prompt is version-controlled** | Keep it at `loop/routine-prompt.md` in the project repo and create the routine FROM that file. A prompt that lives only in a UI drifts from the repo with nothing to notice — one project's live prompt still forced `visual: unverified`, which caps at FAIL, so it failed every item it built. |
+
+**Then verify by FIRING it — never by waiting for its first cron.** Fire it with an override that
+says *pre-flight only, build nothing, create no branch or PR*, and read the result. You are looking
+for exactly three things: it has a repo, `build/preflight.mjs` exits 0, and the Figma probe returns
+variables. Anything else is a routine that will fail at 2am instead of now.
+
+Two more constraints to state honestly rather than discover later:
+
+- **Every routine's first step is `node build/preflight.mjs`.** It repairs the submodule, deps,
+  plugins, OSUI and the theme, resolves a browser for the fidelity gate, and prints a NAMED REMEDY
+  for anything it cannot fix — so a run that produces nothing always says which check stopped it.
+  The two prerequisites Node cannot see (the session's Figma connector, and having a repo) are
+  probed by the agent itself.
 - **A routine stops at every checkpoint** in `loop/goal.md`, and never approves, merges, or opens a
   handover. It advances work and opens PRs; the human signs.
 
@@ -351,9 +374,16 @@ Two constraints to state honestly rather than discover later:
 Run the whole gate, in order, and show the real output:
 
 ```bash
+node build/preflight.mjs # repairs submodule + deps + plugins + OSUI + theme; names what it cannot
 npm run check:config     # no placeholders, no leaked example prefix, conventions well-formed
 npm run build:theme      # check:config → assemble dist/theme.css → validate
 ```
+
+**`preflight.mjs` is the whole of §4 and most of §2d as one command, and its exit code is this
+section's verdict.** Read its table rather than re-deriving it: a `FAILED` row carries the exact
+remedy, and its `www.figma.com` row being a *warning* rather than a failure is the disclosure that
+no ref will carry a design render — which means nothing in the pipeline compares a build to the
+design visually, and the human is the visual gate. Say that out loud in §9 if it is warning.
 
 Then prove the **fidelity gate can actually run**, because it is the thing that silently degrades
 to `unverified` and fails every item:
@@ -414,3 +444,10 @@ the loop by hand, or nothing at all — the routine does it tonight.
 8. **Ask before anything outward-facing** — creating a repository, creating a scheduled routine,
    pushing to a remote.
 9. **Do not skip the submodule.** It is the most-skipped step and it invalidates the fidelity gate.
+10. **Verify a scheduled job by firing it, not by waiting for its cron.** A routine that looks
+    configured and is not costs a whole cycle, silently — and the failure arrives at 2am with
+    nobody awake to read it.
+11. **A prerequisite that nothing executes is not a safeguard.** Prose in a runbook has already
+    described these failures accurately for days while failing to prevent a single one. If a
+    requirement matters, it belongs in `preflight.mjs` with a named remedy, or in a step that
+    probes it — not in a paragraph.
