@@ -30,7 +30,7 @@ Required project context:
 - `name` (project name)
 
 ### 3. Accessibility mode
-Default is **fidelity-first WCAG 2.2 AA**: apply implementation-level a11y automatically; flag (don't fix) anything that would alter a design-specified value. The `outsystems-accessibility` skill is always active.
+Default is **fidelity-first WCAG 2.2 AA**: apply implementation-level a11y automatically; flag (don't fix) anything that would alter a design-specified value. There is no single accessibility skill — the rules come from upstream, the 2.2 delta and the fix-vs-flag decision from `outsystems-design-findings`, and custom-element a11y from `outsystems-web-component`. See `references/accessibility-integration.md` for which applies where.
 
 ### 4. Findings routing config (per-project)
 Check the project's `CLAUDE.md` / `project-context.md` (or memory `OutSystems project: findings routing = ...`) for:
@@ -65,7 +65,7 @@ If missing, ask once (via `outsystems-design-findings`) and store. Default is **
 - Component inventory: ✅ As-is / 🎨 Customize / 🆕 Web Component
 - Brand consistency findings
 - Token deltas
-- **Accessibility findings** (from `outsystems-accessibility` running alongside — flagged, not fixed)
+- **Accessibility findings** (flagged, not fixed — flow-level criteria surface only at this phase)
 - Implementation plan with escalation levels
 - A consolidated **Findings Register** (audit section 5)
 
@@ -82,7 +82,7 @@ If missing, ask once (via `outsystems-design-findings`) and store. Default is **
 - Fresh Figma URL → invoke `outsystems-figma-integration` first
 - Manual values → invoke `outsystems-token-extractor` directly
 
-**Always:** `outsystems-accessibility` calculates contrast at generation time and raises findings on failures — tokens are built as designed, never silently re-shaded.
+**Always:** contrast is computed at generation time and failures become findings — tokens are built as designed, never silently re-shaded. Formula: `outsystems-design-findings` → `references/contrast-calculator.md`.
 
 ### Phase 3: Component Build (escalation ladder)
 
@@ -94,7 +94,7 @@ If missing, ask once (via `outsystems-design-findings`) and store. Default is **
 | **L4** | Wrap pattern in custom Block | 30-60 min | `outsystems-bem-css` |
 | **L5** | **Web Component + Block wrapper** | 1-4 hrs | `outsystems-web-component` |
 
-**Always:** `outsystems-accessibility` runs alongside. It auto-applies focus indicators (in the design's colors), touch targets where layout allows, ARIA, and keyboard handlers; and it flags (does not fix) any contrast/size conflict that would alter the design — those go back through Phase 1.5.
+**Always:** implementation-level a11y is auto-applied by the building skill — focus indicators in the design's colours, touch targets where layout allows, ARIA, keyboard handlers. Any contrast/size conflict that would alter the design is flagged, not fixed, and goes back through Phase 1.5.
 
 ### Phase 4: Style Guide Update
 Invoke `outsystems-style-guide-doc`. Generated page **must** include the Accessibility Report section and link any open findings for the component.
@@ -155,9 +155,9 @@ Invoke `outsystems-style-guide-doc`. Generated page **must** include the Accessi
 |---|---|
 | Shares a Figma URL | `outsystems-figma-integration` → `outsystems-component-audit` → `outsystems-design-findings` |
 | Shares a screenshot | `outsystems-component-audit` → `outsystems-design-findings` |
-| "Generate :root for..." | `outsystems-token-extractor` (+ `outsystems-accessibility` calculates contrast → findings) |
-| "Customize the [pattern]" | `outsystems-bem-css` (+ `outsystems-accessibility`) |
-| "Build a [custom thing]" | `outsystems-web-component` (+ `outsystems-accessibility`) |
+| "Generate :root for..." | `outsystems-token-extractor` (contrast computed → findings) |
+| "Customize the [pattern]" | `outsystems-bem-css` |
+| "Build a [custom thing]" | `outsystems-web-component` — **only after the L4.5 gate** |
 | "Log these / open tickets / send to Slack" | `outsystems-design-findings` (findings filed as Bug) |
 | "Hand this over" / after any code generation | Phase 6 — `outsystems-git-helpers` + GitHub Task assigned to user |
 | "Document this for the Style Guide" | `outsystems-style-guide-doc` (with a11y section + linked findings) |
@@ -170,7 +170,7 @@ Invoke `outsystems-style-guide-doc`. Generated page **must** include the Accessi
 1. Pre-flight (memory + findings-routing config checks)
 2. `outsystems-figma-integration` pulls data via MCP
 3. `outsystems-component-audit` classifies
-4. `outsystems-accessibility` calculates contrast + raises a11y findings (does not alter colors)
+4. Contrast computed; a11y findings raised (colours never altered)
 5. `outsystems-design-findings` writes the register + routes `high+` (Phase 1.5)
 6. Present Phase 1 audit + Findings Register + offer next steps
 
@@ -179,9 +179,9 @@ Same as above but skip Figma MCP step.
 
 ### When user asks for a custom component
 1. Pre-flight
-2. Confirm L5 (no OS UI pattern fits)
+2. Confirm L5 — no OS UI pattern fits **and** upstream `extensibility.md` offers no path (the L4.5 gate)
 3. `outsystems-web-component` generates the JS file + Block wrapper
-4. `outsystems-accessibility` ensures keyboard, ARIA, target sizes; flags any design-level conflict
+4. That skill's own references cover keyboard, ARIA and target sizes; design-level conflicts are flagged
 5. Phase 6 — `outsystems-git-helpers` artifacts + open a **handover Task assigned to the user** with the files and OutSystems install steps
 
 ### When user says "everything" or "do it all"

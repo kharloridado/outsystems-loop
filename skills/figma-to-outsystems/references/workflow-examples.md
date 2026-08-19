@@ -20,7 +20,7 @@ User: "Audit this Figma screen for me: figma.com/design/ABC123/AcmePortal"
 9. Now run actual task: `outsystems-figma-integration`
 10. Tool search for Figma, then call `Figma:get_design_context`, `get_variable_defs`, `get_screenshot`
 11. Pass to `outsystems-component-audit` for classification
-12. `outsystems-accessibility` runs alongside, validates colors, flags issues
+12. Contrast validated against the design's palette; conflicts flagged, never re-shaded
 13. Output Phase 1 audit with all sections
 
 **User sees:**
@@ -86,7 +86,7 @@ User: "Designer added new colors to Figma. Pull them and update the theme."
 4. User confirms same file
 5. `outsystems-figma-integration` calls `Figma:get_variable_defs` for the file
 6. Pass to `outsystems-token-extractor`
-7. `outsystems-accessibility` validates color contrast
+7. Contrast validated for every implied pair
 8. Output the `:root` delta
 
 **User sees:**
@@ -133,7 +133,7 @@ User: "Generate the pricing toggle component"
 1. Conventions + project in memory ✅
 2. Recall from prior audit: pricing toggle = L5
 3. Invoke `outsystems-web-component`
-4. `outsystems-accessibility` enforces keyboard, ARIA, contrast, touch targets
+4. Keyboard, ARIA, contrast and touch targets per `outsystems-web-component` references
 5. Generate three deliverables:
    - `acme-pricing-toggle.js`
    - Block wrapper specs
@@ -242,6 +242,6 @@ Proceeds without asking permission:
 3. `outsystems-web-component` → generates pricing toggle
 4. `outsystems-style-guide-doc` → generates docs for both
 5. `outsystems-git-helpers` → generates commit messages for each
-6. `outsystems-accessibility` runs alongside throughout
+6. Accessibility applied per `references/accessibility-integration.md` throughout
 
 Output is one long response with all artifacts organized by deliverable.

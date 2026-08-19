@@ -1,7 +1,13 @@
 # OutSystems Design Loop — Claude Code plugin
 
-The **behavior** half of the Figma → OutSystems design-system workflow: 13 skills plus the
+The **behaviour** half of the Figma → OutSystems design-system workflow: 16 skills plus the
 `maker` / `checker` agent pair that drive the autonomous build loop.
+
+It holds **no OutSystems platform knowledge**. Block names, arguments, CSS variables, utility
+classes, widget conventions and the WCAG-to-widget mapping all live in OutSystems' own
+frontend-skills pack, vendored as a pinned submodule and read at runtime. This repo holds the
+process, the policy and the judgement. See [ARCHITECTURE.md](ARCHITECTURE.md) — that separation is
+load-bearing, not tidiness.
 
 The **project-shaped** half (tokens, build pipeline, preview harness, findings register, handover
 bodies, GitHub scaffolding) lives in the companion scaffold,
@@ -51,15 +57,25 @@ get the same version.
 | `outsystems-figma-integration` | Read Figma directly via MCP. |
 | `outsystems-bem-css` | BEM CSS that overrides native widgets, token-only. |
 | `outsystems-web-component` | Vanilla-JS Web Components + Block wrapper (L5 only). |
-| `outsystems-accessibility` | WCAG 2.2 AA — auto-fix implementation, flag design conflicts. |
 | `outsystems-design-findings` | The flag-don't-fix pipeline: classify, refute, route. |
 | `outsystems-style-guide-doc` | Live Style Guide pages. |
 | `outsystems-git-helpers` | Conventional commits, branches, PRs, changelog. |
 | `outsystems-onboarding` / `outsystems-project-context` | One-time convention + project capture. |
 
-## The contract with the consuming project
+## Two contracts, same shape
 
-The agents hold **no project values**. They read them at runtime from `project.config.json` in the
+The plugin sits between two things it does not own, and reads both at runtime.
+
+**Upstream — platform knowledge.** `vendor/outsystems-frontend-skills/`, a pinned submodule of
+OutSystems' own pack. Never edited, never copied from. A skill that needs to know whether a block
+exists reads `blocks-index.md`; it does not carry a list of its own. When the submodule is missing,
+skills say so and stop rather than answering from memory — a guessed catalog inflates L4/L5 and
+produces a costed plan for work that did not need doing.
+
+Bump it with a submodule checkout, then re-check any mapping table that names upstream identifiers.
+Full rules in [ARCHITECTURE.md](ARCHITECTURE.md).
+
+**Downstream — project values.** The agents hold **no project values**. They read them at runtime from `project.config.json` in the
 consuming repo — `classPrefix`, `jsNamespace`, `conventions`, `knownFalsePositiveClasses`. That is
 what makes one plugin serve every customer.
 

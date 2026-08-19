@@ -1,133 +1,69 @@
-# How Accessibility Integrates with All Skills
+# Where accessibility comes from, phase by phase
 
-The `outsystems-accessibility` skill is not a standalone trigger — it runs alongside every code-generation skill to enforce WCAG 2.2 AA by default.
+There is no `outsystems-accessibility` skill in this plugin. Accessibility is not one skill that
+runs alongside the others — it is three sources with a clean split, and this file says which one
+applies where.
 
-## Integration points
+| Source | Owns | Lives in |
+| --- | --- | --- |
+| **Upstream** | WCAG 2.1 AA, and how each criterion maps onto an OutSystems widget — `Label.TargetWidget`, `Mandatory`, `Fieldset`, `AdvancedHtml` headings, alt text | `vendor/outsystems-frontend-skills/common/accessibility.md` |
+| **`outsystems-design-findings`** | The 2.2-over-2.1 delta, contrast maths, and the fix-vs-flag decision | `references/wcag-2.2-delta.md`, `references/contrast-calculator.md`, and the table in its `SKILL.md` |
+| **`outsystems-web-component`** | The inside of a hand-built custom element — keyboard, ARIA, focus management | `references/keyboard-patterns.md`, `references/aria-recipes.md` |
 
-### With `outsystems-token-extractor` (Phase 2)
-**When tokens are generated:**
-- Validate every color pair against WCAG contrast ratios
-- Add inline comments showing ratios:
-  ```css
-  --color-neutral-7: #475569;  /* 7.93:1 on neutral-0 — passes AA */
-  ```
-- Flag failures with suggestions:
-  ```
-  ⚠️ --color-neutral-5 (#94A3B8) fails 4.5:1 against --color-neutral-0
-  Suggestion: use --color-neutral-6 for body text
-  ```
+The split follows the plugin's boundary rule: upstream owns platform facts, the loop owns policy and
+anything upstream has no reason to cover. Nothing here restates a rule from any of the three — go
+read the source.
 
-### With `outsystems-bem-css` (Phase 3, L3–L4)
-**When CSS is generated:**
-- Add `:focus-visible` styles to every interactive element
-- Use `:focus-visible` (not `:focus`) to avoid showing focus on click
-- Validate text-on-background contrast and add comment
-- Add `prefers-reduced-motion` rules for any animations
-- Include `min-height`/`min-width` for touch targets (24px min, 44px recommended)
-- Use `[aria-disabled="true"]` selector alongside `:disabled` for state styling
+## Per phase
 
-Example generated CSS:
-```css
-.acme-button {
-  min-height: 44px;
-  min-width: 44px;
-  background: var(--color-primary);
-  color: var(--color-neutral-0);  /* 4.78:1 on primary — passes AA */
-  transition: background 0.2s ease;
-}
+### Phase 1 — `outsystems-component-audit`
+Flow-level criteria surface here and nowhere else, because they are only visible across a set of
+frames: consistent help (3.2.6), redundant entry (3.3.7), accessible authentication (3.3.8). Also
+flag designed targets under 24px, drag-only interactions with no alternative, and states the design
+never draws a focus treatment for. All of it goes into the audit's findings register.
 
-.acme-button:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
-}
+### Phase 2 — `outsystems-token-extractor`
+Compute contrast for every pair the palette implies, annotate the measured ratio in a comment beside
+each token, and **emit the token as designed**. A failing pair is an `accessibility/contrast`
+finding; the suggested shade goes in the finding, never into `:root`.
 
-.acme-button[aria-disabled="true"] {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+### Phase 3, L1–L4.5 — `outsystems-bem-css`
+Auto-applied because none of it changes a decision the designer made: `:focus-visible` treatments in
+the design's own colours, `prefers-reduced-motion` guards on anything that transitions,
+`[aria-disabled="true"]` styling beside `:disabled`, and target sizing **where the layout has room
+to grow**. Where it does not have room, that is a finding.
 
-@media (prefers-reduced-motion: reduce) {
-  .acme-button { transition: none; }
-}
-```
+### Phase 3, L5 — `outsystems-web-component`
+A hand-built element ships with none of the accessibility a framework pattern provides. Semantic
+HTML inside the Shadow DOM, keyboard handlers per the pattern, ARIA state, focus management on
+open/close, and a single-pointer alternative for any drag (2.5.7). See that skill's references.
 
-### With `outsystems-web-component` (Phase 3, L5)
-**When Web Component is generated:**
-- Use semantic HTML inside Shadow DOM (`<button>`, not `<div role="button">`)
-- Add keyboard handlers per pattern (`keyboard-patterns.md`)
-- Add ARIA states automatically (`aria-pressed`, `aria-expanded`, `aria-selected`)
-- Include `aria-label` or visible labels
-- Touch targets ≥ 24×24 CSS pixels
-- Focus management on open/close (e.g., for modals)
-- `prefers-reduced-motion` respected for animations
+### Phase 4 — `outsystems-style-guide-doc`
+The Accessibility Report section is mandatory: what was verified, what needs manual testing, what is
+not applicable, which SCs were addressed, and every open finding against the component.
 
-### With `outsystems-component-audit` (Phase 1)
-**When auditing a Figma design:**
-- Flag potential accessibility issues alongside brand flags
-- Check designed color contrast against WCAG
-- Identify components that need keyboard alternatives (e.g., drag-only interactions)
-- Identify components missing visible focus states in design
-- Check minimum target sizes in designed buttons/touch points
+## There is no "skip accessibility" override
 
-Audit output gains a section:
-```
-♿ Accessibility Flags
-- Designed button is 32×32px — must be ≥44×44 for touch targets
-- Drag-to-reorder design needs keyboard alternative (Arrow keys + Space)
-- Tab focus state not shown in design — propose 2px outline pattern
-```
+Earlier versions of this plugin accepted `"skip accessibility for this"` and emitted a
+`// WCAG-OVERRIDE` comment. That path is gone, and its absence is deliberate.
 
-### With `outsystems-style-guide-doc` (Phase 4)
-**When Style Guide doc is generated:**
-- Mandatory Accessibility Report section
-- Lists what's compliant, what to verify manually, what's not applicable
-- Documents keyboard interactions
-- Documents ARIA patterns used
-- Notes specific WCAG SCs addressed
+It was built for a workflow where accessibility fixes *overwrote* the design — so an escape hatch
+was needed to protect fidelity. Fidelity-first inverted that: the implementation already matches the
+design, and conflicts already leave as findings rather than edits. There is nothing left for an
+override to protect, so what it actually bought was silence.
 
-## Override mechanism
+The one override that exists runs the other way — a brand owner approving a specific deviation, per
+finding, recorded against its ID. See **Brand-owner override** in `outsystems-design-findings`.
 
-User can relax enforcement with explicit phrases:
-- `"non-compliant override: [reason]"`
-- `"skip accessibility for this"`
-- `"intentionally non-compliant"`
+## Before any component is marked Approved
 
-When override is detected:
-1. Generate what was asked
-2. Add prominent warning at top of output
-3. List specific violations
-4. Include `// WCAG-OVERRIDE: [reason]` in code
-5. Suggest how to bring it into compliance later
+- Every criterion in upstream's `common/accessibility.md` addressed, plus the seven in
+  `wcag-2.2-delta.md`
+- Accessibility Report section of the Style Guide page complete
+- Keyboard-tested: Tab, Enter, Space, arrows, Esc
+- Tested at 200% zoom
+- Tested with `prefers-reduced-motion: reduce`
+- Contrast verified by measurement, not by reading the source
+- Screen-reader announcement checked (VoiceOver / NVDA / JAWS)
 
-The override applies only to that specific output, not the rest of the conversation.
-
-## What the accessibility skill checks (priority order)
-
-1. **Color contrast** (every CSS generation)
-2. **Focus visibility** (every interactive element)
-3. **Semantic HTML** (every component)
-4. **ARIA states** (every interactive component)
-5. **Keyboard support** (every Web Component)
-6. **Touch targets** (every interactive element)
-7. **Reduced motion** (every animation/transition)
-8. **Error identification** (every form input)
-9. **Help consistency** (Phase 1 audits, screen-level)
-10. **Redundant entry** (Phase 1 audits, form flows)
-
-## What the accessibility skill does NOT do
-
-- Doesn't replace manual screen reader testing
-- Doesn't catch every edge case (some require human review)
-- Doesn't write tests — flags issues, suggests fixes
-- Doesn't override the user's design decisions when they explicitly opt out
-
-## Final checks before "Approved"
-
-Before marking any component Style Guide page as "Approved," verify:
-- ✅ All AA criteria in `wcag-2-2-checklist.md` addressed
-- ✅ Accessibility Report section completed
-- ✅ Component tested with keyboard (Tab, Enter, Space, Arrow keys, Esc)
-- ✅ Component tested at 200% zoom
-- ✅ Component tested with `prefers-reduced-motion: reduce`
-- ✅ Color contrast verified in DevTools or contrast checker
-- ✅ Screen reader announcement tested (VoiceOver/NVDA/JAWS)
+The last two are the ones that get skipped, and they are the two a source-only review cannot fake.

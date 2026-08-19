@@ -1,0 +1,126 @@
+# Architecture — where knowledge lives
+
+## The rule
+
+> **This plugin holds no OutSystems platform knowledge, the same way it holds no project values.**
+
+Platform facts are read at runtime from a pinned copy of OutSystems' own frontend-skills pack.
+Project values are read at runtime from the consuming repo's `project.config.json`. What is left
+in here — process, policy, judgement, and the things upstream has no reason to cover — is the
+plugin.
+
+Three packages, one direction of dependency, and nothing owns anything above or below it:
+
+```
+vendor/outsystems-frontend-skills/     OutSystems, upstream       pinned · never edited
+              ▲  read by path at runtime
+outsystems-loop                        this repo                  /plugin install --scope project
+              ▲  read at runtime
+project.config.json                    the consuming project      per-customer values
+```
+
+## The test
+
+For any sentence you are about to write in this repo:
+
+| The sentence answers | It belongs |
+| --- | --- |
+| *What does OutSystems have, and how does it work?* | upstream — cite it |
+| *What do we do about it?* | here |
+
+"OutSystems UI ships a `Pagination` block with `OnNavigate`" is upstream. "Reaching for a
+hand-rolled arrow button instead is a FAIL" is ours. The first is a fact with an owner; the second
+is a judgement, and judgements are what this plugin is for.
+
+When something is genuinely absent upstream — BEM naming, Web Component internals, the criteria
+WCAG 2.2 adds over 2.1 — that is **not overlap**, and it stays here. Absence is the test, not
+topic. Accessibility is not "upstream's topic"; WCAG 2.1 mapped onto OutSystems widgets is
+upstream's *content*, and 2.2's additions are ours because nobody else carries them.
+
+## What upstream owns
+
+Read these; never restate them.
+
+| Need | Path under `vendor/outsystems-frontend-skills/` |
+| --- | --- |
+| Every block: arguments, placeholders, events | `ui-frameworks/outsystems-ui/blocks-index.md` |
+| Right component for the content | `.claude/skills/references/component-selection.md` |
+| Widget conventions, the silent-failure rules | `ui-frameworks/outsystems-ui/widget-conventions.md` |
+| Extending a pattern beyond its inputs (L4.5) | `ui-frameworks/outsystems-ui/extensibility.md` |
+| CSS variables, utility classes, palette, scales | `ui-frameworks/outsystems-ui/styles-and-utilities.md` |
+| Where CSS belongs and what to override | `common/css-customization.md` |
+| WCAG 2.1 AA on OutSystems widgets | `common/accessibility.md` |
+| Breakpoints, responsive vs adaptive | `common/responsive-design.md` |
+| Screen templates and end-to-end recipes | `ui-frameworks/outsystems-ui/screen-templates.md`, `recipes/` |
+| Mobile UI Template (Ionic) and its `--token-*` system | `ui-frameworks/mobile-ui/`, `foundations/outsystems-design-tokens/` |
+| Charts, Maps | `ui-components/` |
+| Implementation-quality rubric (16 criteria) | `.claude/skills/review-ui-implementation/rubric.md` |
+| Perceived-quality rubric (16 criteria) | `.claude/skills/runtime-ui-audit/rubric.md` |
+
+## What this plugin owns
+
+Figma ingestion · token translation · BEM naming · Web Components and their internals · the
+flag-don't-fix findings pipeline · Style Guide pages · git artifacts · onboarding and project
+context · the maker/checker loop, the rendered-fidelity gate, risk tiers, adversarial refutation ·
+one PR per deliverable · the WCAG 2.2 delta.
+
+## What 2.0 removed, and where it went
+
+| Removed | Reason | Replacement |
+| --- | --- | --- |
+| `skills/outsystems-accessibility/` | Duplicated `common/accessibility.md`, at an older WCAG level than it claimed to enforce | Upstream, plus the three splits below |
+| its `wcag-2-2-checklist.md` | 2.1 content restated around seven 2.2 additions | `outsystems-design-findings/references/wcag-2.2-delta.md` — the seven only |
+| its `contrast-calculator.md` | Not overlap; it produces findings | moved to `outsystems-design-findings/references/` |
+| its `keyboard-patterns.md`, `aria-recipes.md` | Not overlap; upstream never builds custom elements | moved to `outsystems-web-component/references/` |
+| its Tier 1 / Tier 2 policy | Already stated, better, elsewhere | the fix-vs-flag table in `outsystems-design-findings` |
+| `outsystems-bem-css/references/css-locations.md` | Duplicated — and **contradicted** — `common/css-customization.md` | upstream, which argues Theme-first on maintainability grounds |
+| `outsystems-bem-css/references/responsive-patterns.md` | Duplicated `common/responsive-design.md` | upstream |
+| `outsystems-component-audit/references/pattern-catalog.md` | A partial, hand-maintained block list | `blocks-index.md` upstream |
+| `outsystems-token-extractor/references/full-token-list.md` | A partial, hand-maintained variable list | `styles-and-utilities.md` upstream |
+
+Two things were **added** rather than removed, both consequences of reading upstream properly:
+
+- **L4.5** in the escalation ladder — extend a pattern via `Set*Configs` / `Set*Event` / the OSUI JS
+  API before building a Web Component. Upstream documents an extension surface the ladder used to
+  jump straight over, which inflated L5.
+- **Domain 6, framework grain**, in the checker — scored with upstream's implementation rubric. The
+  other five domains all pass on a screen that is pixel-accurate, tokenised, cleanly named, and
+  built from Containers where the framework already shipped the block.
+
+## The one accepted cost
+
+**Upstream is written to WCAG 2.1 AA. This loop commits to 2.2 AA.** The gap is not overlap, so it
+lives here, in exactly one file: `outsystems-design-findings/references/wcag-2.2-delta.md`. It
+contains the seven criteria 2.2 adds and nothing else.
+
+If upstream moves to 2.2, **delete that file** rather than reconciling it. A delta that outlives its
+gap becomes a second source of truth, which is the failure this whole document exists to prevent.
+
+## Updating upstream
+
+A submodule bump, nothing more:
+
+```bash
+git -C vendor/outsystems-frontend-skills fetch --tags
+git -C vendor/outsystems-frontend-skills checkout <newer-tag>
+git add vendor/outsystems-frontend-skills
+```
+
+Then re-check the mapping tables that name upstream identifiers — chiefly
+`outsystems-token-extractor`'s Figma→variable map, whose right-hand column belongs to the framework.
+Names we assert that upstream does not declare are drift, and drift is resolved in upstream's
+favour.
+
+Never edit inside `vendor/`. If upstream is wrong, that is an issue against upstream, and the
+workaround lives on our side of the line.
+
+## Enforcing this in review
+
+Three questions on any PR to this repo:
+
+1. **Does this state a platform fact?** Then it is either a citation or it is in the wrong repo.
+   Restating an upstream fact "for convenience" is how the two copies start disagreeing — and the
+   copy people trust is the nearer one, which is the stale one.
+2. **Does a skill answer a catalog question with no path to read?** Then it is answering from
+   memory. Say so and stop, rather than shipping a confident guess.
+3. **Is anything under `vendor/` modified?** Then the boundary is already broken.

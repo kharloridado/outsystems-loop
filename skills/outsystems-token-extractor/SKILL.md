@@ -9,6 +9,32 @@ description: Translate Figma design tokens into OutSystems UI CSS custom propert
 1. Check memory for `OutSystems convention:` entries. If missing → invoke `outsystems-onboarding`.
 2. Use stored spacing base, token style, and prefix silently.
 
+## Which variable system — check this first
+
+Two OutSystems frameworks, two disjoint variable namespaces, and targeting the wrong one is a
+silent no-op that looks like a working theme:
+
+| App type | Namespace | Catalog |
+| --- | --- | --- |
+| Reactive Web / Phone App Template (OutSystems UI) | `--color-*`, `--space-*`, `--font-size-*`, `--shadow-*` | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/styles-and-utilities.md` |
+| ODC Mobile UI Template (Ionic-based) | `--token-*` | `vendor/outsystems-frontend-skills/foundations/outsystems-design-tokens/design-tokens.md` |
+
+This skill defaults to OutSystems UI. Confirm the stack before generating, and never mix the two in
+one `:root`.
+
+## Every name in the right-hand column must be verified upstream
+
+The mapping table below is a **mapping**, not a catalog — the left column is ours, the right column
+belongs to the framework, and this repo does not get to assert what the framework declares. Before
+emitting a variable, confirm the name exists in the upstream catalog for the stack above.
+
+Names in the table below that upstream does not list are drift and must be resolved, not shipped.
+Known suspects to check on the next upstream bump: `--border-radius-pill`, `--font-size-2xl`,
+`--space-2xl`, `--space-3xl` — upstream documents `--border-radius-{none|soft|rounded|circle}` and
+`--space-{none|xs|s|base|m|l|xl|xxl}`. If the framework has no such name, the token is
+component-scoped and takes the project prefix instead; it does not get to squat a
+framework-shaped name the framework never declared.
+
 ## When to use
 - User shares Figma token specs / Variables / brand guidelines
 - User asks "generate :root", "update brand colors", "set up theme"
@@ -44,7 +70,7 @@ State in the handover which framework properties the theme re-points, and what m
 A **component-scoped** token (`--acme-button-height`) is a different thing and stays prefixed:
 the framework has no name for it, so there is nothing to override.
 
-## Token mapping (see references/full-token-list.md for complete inventory)
+## Token mapping (Figma category → framework variable; verify every right-hand name upstream)
 
 | Figma Category | OutSystems UI Variable |
 |---|---|
@@ -113,7 +139,13 @@ For every color paired with a text or border context, calculate contrast and ann
 - Pass AA Large only: `/* 3.2:1 ✓ (large text only) */`
 - Fail: `/* ⚠️ 2.1:1 — FAILS WCAG AA, suggest darkening */`
 
-If a token fails contrast for its expected use case, recommend a darker/lighter alternative.
+If a token fails contrast for its expected use case, **emit the token as designed** and raise an
+`accessibility/contrast` finding through `outsystems-design-findings`. The darker alternative goes
+in the finding as advice for the designer — never into the `:root` block. Formula and thresholds:
+`outsystems-design-findings` → `references/contrast-calculator.md`; the criteria WCAG 2.2 adds over
+upstream's 2.1 baseline: `references/wcag-2.2-delta.md` in the same skill.
 
 ## Reference
-- `references/full-token-list.md` — Complete inventory
+
+This skill carries no variable inventory. Read the catalog for the stack from the table in
+**Which variable system** above.

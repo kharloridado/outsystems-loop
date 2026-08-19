@@ -14,7 +14,27 @@ Trigger when:
 - Component audit classifies something as "🆕 Build" (L5)
 - User says "build a component", "make a [thing]", "custom [pattern]"
 - User explicitly mentions Web Components, Custom Elements, Shadow DOM
-- L1–L4 escalation doesn't fit the design
+- L1–L4.5 escalation doesn't fit the design
+
+## The L4.5 gate — clear it before writing a line
+
+An L5 is the most expensive outcome in the ladder and the only one that creates a component the
+team maintains forever. It is justified when the framework has nothing for this. It is *not*
+justified when the framework has the pattern and merely lacks the behaviour, because that case has
+its own supported extension surface:
+
+- typed `Set*Configs` / `Set*Event` client actions on the provider-based patterns (Carousel,
+  DatePicker, DropdownSearch, RangeSlider and others),
+- the direct JavaScript API, `OutSystems.OSUI.Patterns.<X>API`,
+- a custom block wrapper when the extension needs to hold state across re-renders.
+
+All of it is documented upstream:
+`vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/extensibility.md`.
+
+**Before generating, state in one line which pattern you checked there and what it could not
+reach.** If you cannot name one, this is L4.5 and belongs to `outsystems-bem-css` plus a wrapper
+block — not here. "Nothing in OutSystems UI does this" is a claim about a catalog this skill does
+not carry; check `blocks-index.md` upstream before making it.
 
 ## Why vanilla JS Web Components for OutSystems
 
@@ -288,9 +308,30 @@ This way:
 - File name: matches tag (e.g., `acme-pricing-toggle.js`)
 - OutSystems Block name: PascalCase, no prefix (e.g., `PricingToggle`)
 
+## Accessibility of what you build
+
+Upstream's accessibility guidance covers **OutSystems widgets** — which widget carries which
+semantics, and how to pair a `Label` with an `Input`. It deliberately says to use framework
+patterns rather than custom HTML, so it has nothing to say about the inside of a custom element.
+That gap is this skill's to fill, and the two references below moved here for exactly that reason.
+
+A hand-built element starts with zero of the accessibility a framework pattern ships with. Every
+generated component implements keyboard operation, focus management, ARIA state, and a
+single-pointer alternative for any drag interaction (WCAG 2.2 SC 2.5.7) — none of which are
+optional, and all of which are cheaper to write now than to retrofit.
+
+Where a design constraint blocks one of them, build to the design and raise it through
+`outsystems-design-findings`. Do not quietly ship an inaccessible element and do not quietly
+redesign it.
+
 ## Always read these references before generating
 
 - `references/web-component-patterns.md` — Reusable patterns (form-associated, list, container, etc.)
 - `references/shadow-dom-gotchas.md` — Common pitfalls in OutSystems context
 - `references/event-design.md` — How to design events that play well with OutSystems Client Actions
 - `references/outsystems-integration.md` — Deep guide to the Block wrapper pattern
+- `references/keyboard-patterns.md` — Keyboard interaction per component type (tabs, dialog, combobox, slider, drag-handle alternative)
+- `references/aria-recipes.md` — ARIA for hand-built elements, and the anti-patterns to avoid
+
+For anything about OutSystems widgets, themes, or CSS placement, read the upstream pack rather than
+this skill — see the L4.5 gate above for the path.

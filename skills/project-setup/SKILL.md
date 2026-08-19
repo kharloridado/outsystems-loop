@@ -177,6 +177,7 @@ Two things to state while you are here:
 | Figma MCP | a small read against the library key succeeds | connect it; **blocks the loop entirely** |
 | `gh` | `gh auth status` | `gh auth login`; blocks findings + handovers + PRs |
 | Browser | §8's harness smoke test | `npm install`; blocks the fidelity gate |
+| Platform-knowledge pack | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md` exists | §4b; blocks audit classification and the checker's grain domain |
 | CI | `.github/workflows/verify.yml` present | it ships with the template; **needs no secrets** |
 
 **On CI** — the template ships a `Verify` workflow that re-runs the deterministic gate and the
@@ -234,7 +235,13 @@ whose two config files disagreed about its own class prefix for its entire life.
 
 Then confirm: `npm run check:config` must print ok.
 
-## 4. Dependencies and the submodule — the step everyone skipped
+## 4. Dependencies and the submodules — the step everyone skipped
+
+There are **two** submodules and they do different jobs. `vendor/outsystems-ui/` is the framework's
+compiled CSS, which the fidelity gate measures against. `vendor/outsystems-frontend-skills/` is
+OutSystems' own frontend knowledge pack, which every skill in this plugin reads instead of carrying
+platform facts of its own. Miss the first and measurements describe a page nobody will see; miss the
+second and the skills have no catalog to look anything up in.
 
 ```bash
 npm install
@@ -257,6 +264,37 @@ class of defect that only appears after handover.
 git -C vendor/outsystems-ui checkout <vX.Y.Z>
 git add vendor/outsystems-ui
 ```
+
+### 4b. The platform-knowledge pack
+
+```bash
+git submodule add <OUTSYSTEMS_FRONTEND_SKILLS_REPO_URL> vendor/outsystems-frontend-skills
+git -C vendor/outsystems-frontend-skills checkout <tag-or-sha>
+git add vendor/outsystems-frontend-skills
+```
+
+> **The URL is deliberately blank.** Confirm it with the OutSystems team and record it in
+> `project.config.json` under `platformKnowledge.repo` before running this. The repo is owned by
+> `@OutSystems/rd-ui-components` and was not publicly resolvable at the time this step was written,
+> so a plausible-looking URL here would be exactly the credible-looking default this project
+> forbids. If you cannot confirm it, record the gap in the report and leave the field blank.
+
+**Pin it to a tag or SHA, never `main`.** These files are the source of truth for block names,
+arguments, CSS variables and utility classes; if they move under a running project, the audit's
+classifications and the checker's grain score change without a single commit in this repo.
+
+**Never edit anything inside it.** It is upstream, not ours. If it is wrong or missing something,
+that is an issue against the upstream repo, and the workaround lives on our side of the boundary.
+See `ARCHITECTURE.md`.
+
+**Verify it landed:**
+
+```bash
+test -f vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md && echo ok
+```
+
+If that file is absent, the audit, the CSS skills and the checker's grain domain are all running
+blind — say so plainly rather than letting them infer a catalog from memory.
 
 ## 5. Deliverables → the signed inventory → the queue
 
@@ -413,4 +451,7 @@ the loop by hand, or nothing at all — the routine does it tonight.
    customer's library.
 8. **Ask before anything outward-facing** — creating a repository, creating a scheduled routine,
    pushing to a remote.
-9. **Do not skip the submodule.** It is the most-skipped step and it invalidates the fidelity gate.
+9. **Do not skip the submodules.** `vendor/outsystems-ui/` is the most-skipped step and it
+   invalidates the fidelity gate. `vendor/outsystems-frontend-skills/` is the newer one, and
+   skipping it degrades quietly rather than loudly — the skills keep answering, just from memory
+   instead of from the catalog. Verify both.
