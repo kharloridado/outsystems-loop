@@ -11,6 +11,19 @@ Generate production-grade BEM CSS for OutSystems Reactive Web and ODC.
 
 1. Check `memory_user_edits` for "OutSystems convention:" entries. If missing → invoke `outsystems-onboarding` first.
 2. Use the stored prefix (e.g., `acme-`) throughout. Never ask "what prefix?" — it's in memory.
+3. **Read upstream before writing a selector.** This skill owns BEM naming and nothing else. Where
+   the CSS belongs, which variables exist, and which utility classes already cover the property are
+   all platform knowledge, read from the pinned upstream pack:
+
+   | Need | Read |
+   | --- | --- |
+   | Where this CSS belongs (Theme / Screen / Block, and why Theme is the default) | `vendor/outsystems-frontend-skills/common/css-customization.md` |
+   | The `:root` variables, utility classes, colour palette, spacing scale | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/styles-and-utilities.md` |
+   | Breakpoints and responsive behaviour | `vendor/outsystems-frontend-skills/common/responsive-design.md` |
+   | Whether the framework already ships this widget | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md` |
+
+   Do not restate their contents here or infer them from memory. If the submodule is missing, stop
+   and say so — guessing a variable name produces a rule that silently never applies.
 
 ## When to use
 
@@ -25,6 +38,21 @@ Generate production-grade BEM CSS for OutSystems Reactive Web and ODC.
 
 - Component doesn't exist in OutSystems UI → use `outsystems-web-component` skill instead (L5)
 - User wants just a token update → use `outsystems-token-extractor` skill
+
+## Rule minus-one: a utility class beats a rule you wrote
+
+Before rule zero, before BEM, before any selector at all: check whether OutSystems UI already ships
+a utility class for the property. The catalog is upstream in `styles-and-utilities.md` — spacing,
+colour, typography, layout, flex, position, display, border-radius and shadow are all covered.
+
+A custom rule is justified only when (a) the property has no utility equivalent (gradient,
+animation, clip-path, transform), or (b) the value falls outside the utility scale. Even then the
+rule body stays minimal — every property a utility can express goes on `ExtendedClass` beside your
+class name, not into your class body.
+
+The failure this prevents: a seven-property class where five of the properties are
+`display-flex align-items-center justify-content-center border-radius-circle` under different names,
+now maintained by you instead of by the framework.
 
 ## Rule zero: restyle, don't shadow
 
@@ -65,7 +93,7 @@ Output the mapping table (framework class → design variant) alongside the code
 From context or quick inference:
 1. **What component?** (name, screenshot if available)
 2. **OutSystems UI pattern this extends?** (Card, Button, etc. — or "Custom Block")
-3. **CSS location?** (Theme / Block / Screen — see references/css-locations.md)
+3. **CSS location?** (Theme / Block / Screen — decided by `vendor/outsystems-frontend-skills/common/css-customization.md`, not by this skill)
 4. **States needed?** (hover, focus, disabled, active, error, loading…)
 
 If anything is unclear, make a reasonable assumption and state it. Don't pause for clarification on every detail.
@@ -158,7 +186,8 @@ Then provide:
 
 ## References
 
-- `references/css-locations.md` — Where each type of CSS belongs
-- `references/state-vocabulary.md` — Standard state modifier names
-- `references/common-patterns.md` — BEM examples for common OS UI patterns
-- `references/responsive-patterns.md` — Mobile-first patterns
+- `references/state-vocabulary.md` — Standard state modifier names (loop convention)
+- `references/common-patterns.md` — BEM examples for common OS UI patterns (loop convention)
+
+Platform knowledge is not duplicated here. For where CSS belongs, the variable and utility catalog,
+breakpoints, and the block index, read the upstream pack listed in **Pre-flight** above.

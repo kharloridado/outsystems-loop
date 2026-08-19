@@ -1,6 +1,6 @@
 ---
 name: outsystems-design-findings
-description: Capture, classify, and route design-conformance findings discovered during OutSystems frontend work — accessibility (WCAG 2.2 AA) issues baked into the design, brand-color deviations, and hard-coded values that bypass design tokens. Use this skill whenever a design is implemented faithfully but contains conflicts that must be raised back to the designer or brand owner instead of being silently fixed in code — failing color contrast on brand colors, off-palette colors, non-tokenized values, missing-token gaps, or any situation where the design does not follow accessibility, brand, or token rules. Also use whenever the user wants to open tickets (Notion or Jira/Atlassian) or post to Slack about design issues. This is the flag-don't-fix companion to the outsystems-accessibility and outsystems-component-audit skills, and it runs at the end of Phase 1 audits and after any component build.
+description: Capture, classify, and route design-conformance findings discovered during OutSystems frontend work — accessibility (WCAG 2.2 AA) issues baked into the design, brand-color deviations, and hard-coded values that bypass design tokens. Use this skill whenever a design is implemented faithfully but contains conflicts that must be raised back to the designer or brand owner instead of being silently fixed in code — failing color contrast on brand colors, off-palette colors, non-tokenized values, missing-token gaps, or any situation where the design does not follow accessibility, brand, or token rules. Also use whenever the user wants to open tickets (Notion or Jira/Atlassian) or post to Slack about design issues. This is the flag-don't-fix companion to the outsystems-component-audit skill, and it runs at the end of Phase 1 audits and after any component build.
 ---
 
 # Design Findings — Flag, Don't Fix
@@ -10,6 +10,22 @@ This skill exists because of one workflow rule the user cares about deeply:
 > **Implement what the design says. Do not silently change brand colors, values, or tokens to satisfy accessibility or "tidy up" the design. When the design conflicts with accessibility, brand, or token rules, raise a tracked finding instead.**
 
 Silently substituting a brand color to pass a contrast check produces an implementation that no longer matches the approved design — which is exactly the failure this skill prevents. The implementation stays faithful; the conflict gets surfaced to the people who own the decision (designer + brand owner) as a ticket and a Slack notification.
+
+## Platform knowledge lives upstream
+
+This skill owns the **policy** — what counts as a finding, how it is classified, where it is
+routed. It owns none of the underlying accessibility, CSS, or widget rules. Those are read at
+runtime from the pinned upstream pack:
+
+| Need | Read |
+| --- | --- |
+| WCAG rules and how they map onto OutSystems widgets | `vendor/outsystems-frontend-skills/common/accessibility.md` (2.1 AA) |
+| The seven criteria WCAG 2.2 adds over 2.1 | `references/wcag-2.2-delta.md` |
+| OutSystems UI variables, utility classes, colour palette | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/styles-and-utilities.md` |
+| Where CSS belongs, what is safe to override | `vendor/outsystems-frontend-skills/common/css-customization.md` |
+
+**Never restate a rule from those files here — cite it.** A finding that quotes a rule this repo
+paraphrased is a finding nobody can check against the source.
 
 ## When this skill runs
 
@@ -41,6 +57,23 @@ When in doubt: if the fix would make the built UI look different from the approv
 description of a theme doing its job. Before filing anything about overrides, ask whether the
 recommendation, if followed, would leave the framework's widgets unbranded — if so, the finding
 is the mistake.
+
+## Brand-owner override
+
+The default is build-to-spec and flag. The override runs the other way: if the user has brand-owner
+sign-off to actually apply a correction that deviates from the design, they say so per finding —
+*"apply the contrast fix on FND-003"*, *"go ahead and darken that, brand approved it"*.
+
+When that happens:
+
+1. Apply the corrected value, referencing the finding.
+2. Leave a comment at the change: `/* a11y-fix per FND-003: #1A73E8 -> #1B4FB8, brand-approved */`
+3. Move the finding's disposition to `fixed-in-design`, or `accepted-as-designed` if the design
+   itself was changed rather than the code.
+
+Without that explicit per-finding sign-off, never deviate from the design. Blanket permission does
+not exist — "fix all the contrast issues" is a request to re-open each finding with the brand
+owner, not authority to edit the palette.
 
 ## Finding types
 
@@ -107,3 +140,5 @@ When this skill runs, produce, in order:
 
 - `references/finding-schema.md` — Full finding field list, ID scheme, severity rubric, register table format, disposition lifecycle.
 - `references/routing.md` — Notion / Jira (Rovo) / Slack payload shapes and tool-call sequences; connector-availability handling.
+- `references/wcag-2.2-delta.md` — the seven success criteria WCAG 2.2 adds over 2.1. Everything else is upstream.
+- `references/contrast-calculator.md` — the WCAG relative-luminance formula, thresholds, and how to comment measured ratios in generated CSS.

@@ -71,7 +71,7 @@ Then immediately continue with the original task — don't make the user re-prom
 ## What this does NOT capture
 
 - Customer name / project name → that's `outsystems-project-context`
-- Accessibility preferences → WCAG 2.2 AA is the default (handled by `outsystems-accessibility`)
+- Accessibility preferences → WCAG 2.2 AA is the default, and not negotiable per-project
 - Figma file URLs → captured per-project if relevant
 
 ## Updating conventions later

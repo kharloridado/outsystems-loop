@@ -37,6 +37,14 @@ Walk top to bottom. Stop at the first level that satisfies the design.
                        │ NO
                        ▼
 ┌─────────────────────────────────────────────────────┐
+│  Q: Pattern fits, but needs behaviour its inputs    │
+│     don't expose?                                   │
+│     If YES → L4.5: Set*Configs / Set*Event, the     │
+│              OSUI JS API, or a stateful wrapper     │
+└─────────────────────────────────────────────────────┘
+                       │ NO
+                       ▼
+┌─────────────────────────────────────────────────────┐
 │  L5: Build vanilla JS Web Component + Block wrapper │
 │  No OS UI pattern fits.                             │
 └─────────────────────────────────────────────────────┘
@@ -94,6 +102,25 @@ Block: ProductCard (Patterns Library)
 ```
 **30–60 minutes. Reusable everywhere.**
 
+### L4.5 — Extend the pattern's behaviour, don't replace it
+```
+Carousel, DatePicker, DropdownSearch, RangeSlider and friends take typed configuration
+beyond their input parameters:
+
+  SetCarouselConfigs(WidgetId, JSON)        -- provider options
+  SetDatePickerEvent(WidgetId, EventName)   -- provider events
+  OutSystems.OSUI.Patterns.CarouselAPI.*    -- direct JS, for what the actions don't cover
+
+Wrap it in a Block when the extension needs to persist state across re-renders.
+```
+**1–3 hours, and it survives upstream updates** — you are using the pattern's own extension
+surface rather than out-specifying its CSS or rebuilding it.
+
+Full API surface: `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/extensibility.md`.
+**This rung is mandatory before any L5 on a pattern that already exists.** Reaching for a Web
+Component because a pattern "can't do X" — when X is one `Set*Configs` call — trades a supported
+extension point for a component you now maintain forever.
+
 ### L5 — Web Component + Block wrapper
 ```
 1. acme-pricing-toggle.js  (vanilla JS Web Component)
@@ -111,6 +138,8 @@ Block: ProductCard (Patterns Library)
   widget OutSystems UI already ships to L3b is describing a parallel design system, not a
   theme. If L3b outnumbers L3a, re-read the framework's class vocabulary before writing CSS.
 - L4: 5–10%
+- L4.5: 2–5% — and it should be **larger than L5.** More designs ask for behaviour an existing
+  pattern nearly has than for a component the framework genuinely lacks.
 - L5: 1–5%
 - L6: 0%
 

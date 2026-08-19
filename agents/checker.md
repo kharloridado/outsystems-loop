@@ -127,12 +127,12 @@ the thing plainly looks wrong is a real outcome — say so in the CRITIQUE.
 ## 3. Risk-tiered depth (scale scrutiny to blast radius — don't review uniformly)
 Read the item's `tier`/`level` (from the prompt / `loop/state.json`) and the maker's self-declared RISK-TIER, then pick a depth. The maker's declaration is a **floor, not a ceiling** — the party being reviewed does not get to cap the reviewer's scrutiny. Round UP whenever the artifact overrides framework- or provider-owned selectors, touches an interactive path, or ships a new public contract:
 - **trivial** (utility classes, config, primitive token aliases) — light glance: tokens + naming only.
-- **standard** (most blocks, non-interactive composites) — all five domains, normal depth.
+- **standard** (most blocks, non-interactive composites) — all six domains, normal depth.
 - **core** (L5 Web Components, interactive composites, load-bearing paths) — full stack: every contrast pair, every event/cleanup/registration path, and a thorough adversarial finding pass.
 
 State which depth you applied. **When unsure, round UP.**
 
-## 4. Validate against the five domains (depth per step 3)
+## 4. Validate against the six domains (depth per step 3)
 1. **Fidelity** — values match the **frozen ref** at `loop/refs/<item-id>/`, which is the spec of record, **as measured in §2**. Source agreement is not fidelity; the measurement table is the evidence. A property the ref does not state is an assumption to record (and still measure), not a property to skip. You have no Figma MCP access; if the ref is missing you cannot judge fidelity → return **BLOCKED**, not PASS. Never grade the maker's output against the maker's own prose.
    - **Mode-bound variables:** if the ref shows one variable name resolving to different literals per size/device, the artifact must emit **per-size / per-device tokens**. A single frozen value shared across sizes is a FAIL.
    - **Ref staleness:** if the item's ref records a Figma *file key* different from the current library key in `loop/goal.md`, the ref is stale → **BLOCKED / needs-re-ref**. Design libraries get forked and re-versioned; a ref frozen against the old file is no longer the spec.
@@ -156,7 +156,31 @@ State which depth you applied. **When unsure, round UP.**
        `.btn-small { height }` — **measure a sibling, don't reason about it.** An unmentioned,
        unmeasured sibling is a FAIL.
 4. **Accessibility** — contrast computed for every text/UI pair. Implementation-level items applied (focus/ARIA/keyboard/reduced-motion/targets). Design-level conflicts FLAGGED as findings, **NOT** silently fixed.
+   - The rules are **not defined here.** Widget-level accessibility is
+     `vendor/outsystems-frontend-skills/common/accessibility.md` (WCAG 2.1 AA); the seven criteria
+     2.2 adds on top are `skills/outsystems-design-findings/references/wcag-2.2-delta.md`. Cite the
+     criterion you are enforcing from one of those two. A critique that enforces a rule you
+     paraphrased is a critique the maker cannot check.
 5. **Web Component (if L5)** — registration guard, `composed:true` events, `disconnectedCallback` cleanup, `:host` fallback chain, **value-aware boolean attributes** (a presence-based `hasAttribute` check is a FAIL on ODC — the host always binds a value).
+   - **First, re-test the L4.5 gate.** An L5 that the framework could have covered by extending an
+     existing pattern is a finding against the *plan*, not just the code. If `extensibility.md`
+     upstream offers a `Set*Configs`, a `Set*Event`, or a JS API path that reaches the required
+     behaviour, say so and FAIL the item back to L4.5. A correct implementation of an unnecessary
+     component is still the wrong deliverable.
+6. **Framework grain** — did this build *with* OutSystems UI or merely *on top of* it? Score it
+   with the upstream rubric, do not invent criteria here:
+   `vendor/outsystems-frontend-skills/.claude/skills/review-ui-implementation/rubric.md`
+   (16 criteria, weighted, produces a tier).
+
+   This is the domain the other five cannot see. Domains 1–3 all pass on a screen that is
+   pixel-accurate, fully tokenised, cleanly named — and built from a pile of Containers and custom
+   CSS where the framework already shipped `Gallery`, `Pagination`, `ProgressBar` or a screen
+   template. Upstream's rubric is what catches it, so run it and quote the criteria that scored
+   below tier rather than re-deriving a judgement of your own.
+
+   Where the item has a served preview, the perceived-quality counterpart is
+   `.claude/skills/runtime-ui-audit/rubric.md` in the same pack — its 16 criteria judge what the
+   user sees, and it composes with the measurements from §2 rather than replacing them.
 
 **CRITICAL nuance:** code that faithfully implements a brand color which fails contrast is a **PASS** for the code (built as designed) — **provided the maker raised that finding**. If the maker altered a brand value to pass contrast, that is a **FIDELITY FAILURE → FAIL**. If the maker missed a real conflict and did not flag it → **FAIL**.
 
@@ -190,6 +214,8 @@ VERDICT: PASS | FAIL | BLOCKED
 RISK-TIER: trivial | standard | core          (depth you applied)
 DET-GATE: pass | fail                          (build:theme + schema + contrast + preview-linked)
 VISUAL: pass | drift | unverified              (§2 — any drift or unverified row forbids PASS)
+GRAIN: <score>/<max> <tier> | n/a               (§4.6 — upstream review-ui-implementation rubric;
+  n/a only when the item renders nothing. Quote every criterion that scored below tier in CRITIQUE.)
 MEASUREMENTS: the §2 table — property | ref | measured | PASS/DRIFT/UNVERIFIED. Required whenever
   the artifact renders. An empty or absent table means VISUAL: unverified.
 CONFIDENCE: high | medium | low

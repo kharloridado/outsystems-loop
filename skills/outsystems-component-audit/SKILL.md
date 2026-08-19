@@ -19,6 +19,23 @@ Phase 1 of the workflow: structured triage of a design before any code is writte
 - User asks which OutSystems UI patterns to use
 - User asks for a customization estimate
 
+## Classification is a lookup, not a guess
+
+The buckets below are only as good as the catalog you check them against, and this skill does not
+carry one. Before assigning a bucket to any element, read the upstream pack:
+
+| Question | Read |
+| --- | --- |
+| Does a block exist for this, and what are its arguments / placeholders / events? | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md` |
+| Is this the *right* component for the content, or merely an available one? | `vendor/outsystems-frontend-skills/.claude/skills/references/component-selection.md` |
+| Can the existing pattern be extended instead of replaced? | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/extensibility.md` |
+| Is there already a whole screen for this shape? | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/screen-templates.md` and `recipes/` |
+| Mobile UI Template app rather than Reactive Web? | `vendor/outsystems-frontend-skills/ui-frameworks/mobile-ui/README.md` |
+
+An audit that classifies from memory inflates L4 and L5 — every block it fails to recall becomes
+something to build. **If the submodule is absent, say so and stop.** An audit with a guessed catalog
+is worse than no audit: it produces a costed plan for work that did not need doing.
+
 ## Inputs
 
 1. **Visual** (screenshot, Figma frame export, or detailed description)
@@ -52,9 +69,16 @@ a prefixed class" is how a theme ends up branding nothing until a developer type
 `ExtendedClass` on every instance. Check the widget SCSS **and** the pattern enums under
 `src/scripts/OSFramework/OSUI/Pattern/*/Enum.ts` before you claim the framework lacks a name.
 
+**Before any L5, clear the extensibility gate.** "The pattern exists but can't do X" is not an L5.
+Provider-based patterns expose typed `Set*Configs` / `Set*Event` client actions and a direct
+JavaScript API (`OutSystems.OSUI.Patterns.<X>API`), and a custom block wrapper can add persistent
+state around any of them — all documented upstream in `extensibility.md`. That is **L4.5**, and it
+sits between wrapping a pattern and building one. An L5 is only honest once you can name what you
+checked there and why it doesn't reach.
+
 **Important:** L5 always means Web Component now. Don't suggest "build a custom Block with HTML widgets from scratch" — that's the old approach. Web Components are the user's chosen architecture.
 
-Reference the full OutSystems UI pattern catalog when classifying. If unsure between two patterns, propose both with trade-offs.
+Name patterns using the upstream `blocks-index.md` spelling exactly. If unsure between two, propose both with trade-offs and cite the arguments that differ.
 
 ### 2. Brand Consistency Flags → findings
 
@@ -101,7 +125,7 @@ Recommended order:
 
 ### 5. Findings Register
 
-Consolidate every conflict from this audit — the brand/token findings from section 2 **plus** any accessibility findings surfaced by the `outsystems-accessibility` skill running alongside (contrast failures on brand colors, fixed-size targets under 24px, flow-level consistency issues). Present them as a single register table (columns per `outsystems-design-findings` → `references/finding-schema.md`), then hand off to `outsystems-design-findings` to write the register file and route per project config (Notion/Jira ticket + Slack for `high+`).
+Consolidate every conflict from this audit — the brand/token findings from section 2 **plus** any accessibility findings (contrast failures on brand colors, fixed-size targets under 24px, flow-level consistency issues) — measured against `vendor/outsystems-frontend-skills/common/accessibility.md` and, for the criteria 2.2 adds over 2.1, `outsystems-design-findings` → `references/wcag-2.2-delta.md`. Present them as a single register table (columns per `outsystems-design-findings` → `references/finding-schema.md`), then hand off to `outsystems-design-findings` to write the register file and route per project config (Notion/Jira ticket + Slack for `high+`).
 
 Key principle restated: the audit recommends and tracks; it does **not** rewrite the design. Every implementation that follows will be faithful to the mockup, with these findings carrying the open questions back to design.
 
@@ -126,6 +150,7 @@ If the user just says "all of it" or "do everything," proceed in order without a
 
 ## Reference
 
-- `references/pattern-catalog.md` — Full OutSystems UI pattern list with descriptions
-- `references/customization-decision-tree.md` — L1-L5 decision tree with Web Component routing
+- `references/customization-decision-tree.md` — L1–L5 decision tree with Web Component routing
+- `references/figma-mcp-usage.md` — reading the design source
+- The OutSystems UI pattern catalog is **not** duplicated here. Read `blocks-index.md` upstream.
 - `outsystems-design-findings` skill — schema for the Findings Register (section 5) and ticket/Slack routing

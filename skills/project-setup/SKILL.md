@@ -177,6 +177,7 @@ Two things to state while you are here:
 | Figma MCP | a small read against the library key succeeds | connect it; **blocks the loop entirely** |
 | `gh` | `gh auth status` | `gh auth login`; blocks findings + handovers + PRs |
 | Browser | §8's harness smoke test | `npm install`; blocks the fidelity gate |
+| Platform-knowledge pack | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md` exists, and the file count matches `find vendor/outsystems-frontend-skills -type f \| wc -l` | §4b; blocks audit classification and the checker's grain domain. A short count on Windows means `core.longpaths` |
 | CI | `.github/workflows/verify.yml` present | it ships with the template; **needs no secrets** |
 
 **On CI** — the template ships a `Verify` workflow that re-runs the deterministic gate and the
@@ -234,7 +235,13 @@ whose two config files disagreed about its own class prefix for its entire life.
 
 Then confirm: `npm run check:config` must print ok.
 
-## 4. Dependencies and the submodule — the step everyone skipped
+## 4. Dependencies and the submodules — the step everyone skipped
+
+There are **two** submodules and they do different jobs. `vendor/outsystems-ui/` is the framework's
+compiled CSS, which the fidelity gate measures against. `vendor/outsystems-frontend-skills/` is
+OutSystems' own frontend knowledge pack, which every skill in this plugin reads instead of carrying
+platform facts of its own. Miss the first and measurements describe a page nobody will see; miss the
+second and the skills have no catalog to look anything up in.
 
 ```bash
 npm install
@@ -257,6 +264,63 @@ class of defect that only appears after handover.
 git -C vendor/outsystems-ui checkout <vX.Y.Z>
 git add vendor/outsystems-ui
 ```
+
+### 4b. The platform-knowledge pack
+
+Read `platformKnowledge.mode` from `project.config.json`. Two modes, one path — the skills cite
+`vendor/outsystems-frontend-skills/...` either way, so nothing downstream changes.
+
+**Mode `submodule` — the target state.**
+
+```bash
+git submodule add <platformKnowledge.repo> vendor/outsystems-frontend-skills
+git -C vendor/outsystems-frontend-skills checkout <tag-or-sha>
+git add vendor/outsystems-frontend-skills
+```
+
+Pin it to a tag or SHA, **never `main`**. These files are the source of truth for block names,
+arguments, CSS variables and utility classes; if they move under a running project, the audit's
+classifications and the checker's grain score change without a single commit in this repo.
+
+> **Never invent the URL.** It is owned by `@OutSystems/rd-ui-components` and was not publicly
+> resolvable when this step was written. If `platformKnowledge.repo` is null, you are in the other
+> mode — do not go looking for a plausible URL to fill it with.
+
+**Mode `vendored-copy` — the stopgap.** The pack is already committed in the template at that path.
+Nothing to install. Verify it and **report which mode the project is in**, because the two are not
+equivalent and the report is where that gets noticed:
+
+```bash
+cat vendor/outsystems-frontend-skills/VENDORED.md | head -20
+```
+
+A vendored copy has no commit, so it cannot be diffed against upstream and cannot tell you whether
+it is stale. Say so in the closing report, with the `obtained` date, every time — a stopgap that
+stops being mentioned is just a fork nobody has admitted to yet.
+
+**Windows: enable long paths before cloning**, or the copy checks out silently incomplete —
+several of its paths exceed `MAX_PATH` and git skips them with a warning most people scroll past.
+
+```bash
+git config --global core.longpaths true
+```
+
+If the clone already happened without it, set the config and run `git checkout -- .` to pull the
+missing files down, then re-verify the count.
+
+**Never edit anything inside it, in either mode.** It is upstream, not ours. If it is wrong or
+missing something, that is an issue against the upstream repo, and the workaround lives on our side
+of the boundary. In `vendored-copy` mode this rule is the load-bearing one: the first edit turns a
+replaceable copy into a fork that has to be merged by hand. See `ARCHITECTURE.md`.
+
+**Verify it landed:**
+
+```bash
+test -f vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md && echo ok
+```
+
+If that file is absent, the audit, the CSS skills and the checker's grain domain are all running
+blind — say so plainly rather than letting them infer a catalog from memory.
 
 ## 5. Deliverables → the signed inventory → the queue
 
@@ -413,4 +477,7 @@ the loop by hand, or nothing at all — the routine does it tonight.
    customer's library.
 8. **Ask before anything outward-facing** — creating a repository, creating a scheduled routine,
    pushing to a remote.
-9. **Do not skip the submodule.** It is the most-skipped step and it invalidates the fidelity gate.
+9. **Do not skip the submodules.** `vendor/outsystems-ui/` is the most-skipped step and it
+   invalidates the fidelity gate. `vendor/outsystems-frontend-skills/` is the newer one, and
+   skipping it degrades quietly rather than loudly — the skills keep answering, just from memory
+   instead of from the catalog. Verify both.
