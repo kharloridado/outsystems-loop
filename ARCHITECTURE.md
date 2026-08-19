@@ -96,6 +96,22 @@ contains the seven criteria 2.2 adds and nothing else.
 If upstream moves to 2.2, **delete that file** rather than reconciling it. A delta that outlives its
 gap becomes a second source of truth, which is the failure this whole document exists to prevent.
 
+## Two ways upstream can be present
+
+The path is `vendor/outsystems-frontend-skills/` in both cases, so no skill, citation or review
+question changes between them.
+
+| Mode | What it is | Cost |
+| --- | --- | --- |
+| `submodule` | A pinned checkout of the upstream repo. The target state. | none |
+| `vendored-copy` | The pack committed into the consuming repo, for when upstream access does not exist yet. | **No commit, so it cannot be diffed or dated against upstream.** You cannot tell a stale copy from a current one. |
+
+A `vendored-copy` is a stopgap with a real cost, not a second valid design. It survives only while
+the boundary rule does: read it, never edit it. The first edit makes it a fork, and a fork cannot be
+swapped for a submodule — it has to be merged, by someone who no longer remembers what they changed.
+`project.config.json` records which mode a project is in, and `project-setup` reports it every run
+so it stays visible.
+
 ## Updating upstream
 
 A submodule bump, nothing more:

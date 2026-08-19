@@ -177,7 +177,7 @@ Two things to state while you are here:
 | Figma MCP | a small read against the library key succeeds | connect it; **blocks the loop entirely** |
 | `gh` | `gh auth status` | `gh auth login`; blocks findings + handovers + PRs |
 | Browser | §8's harness smoke test | `npm install`; blocks the fidelity gate |
-| Platform-knowledge pack | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md` exists | §4b; blocks audit classification and the checker's grain domain |
+| Platform-knowledge pack | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md` exists, and the file count matches `find vendor/outsystems-frontend-skills -type f \| wc -l` | §4b; blocks audit classification and the checker's grain domain. A short count on Windows means `core.longpaths` |
 | CI | `.github/workflows/verify.yml` present | it ships with the template; **needs no secrets** |
 
 **On CI** — the template ships a `Verify` workflow that re-runs the deterministic gate and the
@@ -267,25 +267,51 @@ git add vendor/outsystems-ui
 
 ### 4b. The platform-knowledge pack
 
+Read `platformKnowledge.mode` from `project.config.json`. Two modes, one path — the skills cite
+`vendor/outsystems-frontend-skills/...` either way, so nothing downstream changes.
+
+**Mode `submodule` — the target state.**
+
 ```bash
-git submodule add <OUTSYSTEMS_FRONTEND_SKILLS_REPO_URL> vendor/outsystems-frontend-skills
+git submodule add <platformKnowledge.repo> vendor/outsystems-frontend-skills
 git -C vendor/outsystems-frontend-skills checkout <tag-or-sha>
 git add vendor/outsystems-frontend-skills
 ```
 
-> **The URL is deliberately blank.** Confirm it with the OutSystems team and record it in
-> `project.config.json` under `platformKnowledge.repo` before running this. The repo is owned by
-> `@OutSystems/rd-ui-components` and was not publicly resolvable at the time this step was written,
-> so a plausible-looking URL here would be exactly the credible-looking default this project
-> forbids. If you cannot confirm it, record the gap in the report and leave the field blank.
-
-**Pin it to a tag or SHA, never `main`.** These files are the source of truth for block names,
+Pin it to a tag or SHA, **never `main`**. These files are the source of truth for block names,
 arguments, CSS variables and utility classes; if they move under a running project, the audit's
 classifications and the checker's grain score change without a single commit in this repo.
 
-**Never edit anything inside it.** It is upstream, not ours. If it is wrong or missing something,
-that is an issue against the upstream repo, and the workaround lives on our side of the boundary.
-See `ARCHITECTURE.md`.
+> **Never invent the URL.** It is owned by `@OutSystems/rd-ui-components` and was not publicly
+> resolvable when this step was written. If `platformKnowledge.repo` is null, you are in the other
+> mode — do not go looking for a plausible URL to fill it with.
+
+**Mode `vendored-copy` — the stopgap.** The pack is already committed in the template at that path.
+Nothing to install. Verify it and **report which mode the project is in**, because the two are not
+equivalent and the report is where that gets noticed:
+
+```bash
+cat vendor/outsystems-frontend-skills/VENDORED.md | head -20
+```
+
+A vendored copy has no commit, so it cannot be diffed against upstream and cannot tell you whether
+it is stale. Say so in the closing report, with the `obtained` date, every time — a stopgap that
+stops being mentioned is just a fork nobody has admitted to yet.
+
+**Windows: enable long paths before cloning**, or the copy checks out silently incomplete —
+several of its paths exceed `MAX_PATH` and git skips them with a warning most people scroll past.
+
+```bash
+git config --global core.longpaths true
+```
+
+If the clone already happened without it, set the config and run `git checkout -- .` to pull the
+missing files down, then re-verify the count.
+
+**Never edit anything inside it, in either mode.** It is upstream, not ours. If it is wrong or
+missing something, that is an issue against the upstream repo, and the workaround lives on our side
+of the boundary. In `vendored-copy` mode this rule is the load-bearing one: the first edit turns a
+replaceable copy into a fork that has to be merged by hand. See `ARCHITECTURE.md`.
 
 **Verify it landed:**
 
