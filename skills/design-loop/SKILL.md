@@ -5,10 +5,15 @@ Run the design loop, governed by this project's CLAUDE.md and the outsystems-* s
 
 **The queue is the signed inventory in `loop/goal.md`, and item status in `loop/state.json`.** A
 GitHub Project board, when the project points at one, is a **human view** — a place to see what is
-in flight. It is never read as the queue. That is not a preference: Projects v2 is GraphQL-only and
-unreachable from a scheduled run, so a board-queued loop fails while claiming a card, before it
-ever reaches the maker, every time and silently. Files in the clone are readable from anywhere.
-`board-ship` and `board-sync` remain available as local, human-invoked skills.
+in flight. It is never read as the queue. That is what makes this skill surface-agnostic: a file in
+the clone is readable at a keyboard and from a cloud routine alike, so the loop runs the same on
+both. A board-queued loop would not: Projects v2 is GraphQL-only and unreachable from the cloud, so
+it would fail while claiming a card, before the maker, every time and silently.
+
+`board-ship` and `board-sync` work against that view and are **local-only** for the same reason —
+which means at the keyboard *or* on a local schedule, not by hand only. `references/surfaces.md`
+is the single statement of which surface reaches what; read it before telling a user where
+anything can run.
 
 **Output: one branch and one PR per item.** Each item is cut fresh from `origin/main`, built,
 checked, and landed as an **open PR** carrying the plan, the measurements, and both decision logs

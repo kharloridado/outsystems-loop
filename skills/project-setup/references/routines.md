@@ -1,33 +1,53 @@
 # Routines — the scheduled runs, created for the user
 
-Exact prompts for the scheduled agents `project-setup` offers to create. Create them with the
-session's scheduling capability; **ask first** — a scheduled agent runs unattended and spends the
-user's budget, so it is theirs to authorise.
+Exact prompts for the scheduled runs `project-setup` offers to create. **Ask first** — a
+scheduled run is persistent configuration that runs unattended and spends the user's budget, so
+it is theirs to authorise.
 
-## What a routine can and cannot do here
+Read `../../design-loop/references/surfaces.md` first. It decides **which surface each routine
+goes on**, and that is the only thing about scheduling that is not obvious:
+
+- **cloud** — a routine in Claude Code on the web. Fires whether or not the laptop is on.
+  Cannot touch a GitHub Project board.
+- **local** — a schedule inside a Claude session on the laptop, created with the session's cron
+  tooling or run on an interval with `/loop`. Reaches the board. Lives only while that session
+  is open, fires only while it is idle, and a recurring session job expires after 7 days.
+
+| # | Routine | Surface | Cadence |
+|---|---|---|---|
+| 1 | Loop advance | either — cloud by default | nightly |
+| 2 | Board sync | **local** | daily, while working |
+| 3 | Board ship | **local** | on demand, or hourly during a review day |
+| 4 | Token-drift reconcile | either — cloud by default | weekly |
+| 5 | Findings digest | either | daily or weekly |
+
+Say plainly which surface each one is on and why, at the moment they authorise it. "This one
+only runs while you have a Claude session open" is the difference between a routine they trust
+and one they think is broken.
+
+## What any routine can and cannot do
 
 **Can:** read the repo, read Figma (with the connector attached), run the build, run the
-**rendered-fidelity gate** — it is a headless browser driven from Node, so it runs in a routine
-exactly as it does at a keyboard — commit, push, open issues, open PRs. All REST, all fine.
+**rendered-fidelity gate** — a headless browser driven from Node, so it runs in a routine exactly
+as it does at a keyboard — commit, push, open issues, open PRs. All REST, all fine.
 
-**Cannot:** touch a GitHub **Project board**. Projects v2 is GraphQL-only: no `gh` on PATH, no
-`project_*` tool, no GraphQL passthrough, and raw GraphQL to `api.github.com` refused by the
-egress proxy. This was measured, not assumed — an hourly board routine fired nine times a weekday
-and every run was a guaranteed no-op. Hence: the inventory in `loop/goal.md` is the queue, and a
-board is only ever a human view.
+**Cannot, on cloud:** touch a GitHub Project board. See `surfaces.md` for the measurement.
 
-**Must not:** merge, approve, move a card to Approved or Done, open a handover Task for unmerged
-work, or push past a `pause` checkpoint. Those are the human's signature.
+**Must not, on any surface:** merge outside `board-ship`, approve, move a card to `Approved` or
+`Done`, open a handover Task for unmerged work, or push past a `pause` checkpoint. Those are the
+human's signature, and being unattended does not loosen one of them.
 
-**Needs the Figma connector attached at creation time.** Without it no ref can be frozen, and an
-item with no ref goes `needs-human` rather than being built from a guess — a whole night producing
-nothing. Tell the user this while they are creating the routine, not after.
+**Needs the Figma connector attached at creation time** (routines 1 and 4). Without it no ref can
+be frozen, and an item with no ref goes `needs-human` rather than being built from a guess — a
+whole night producing nothing. Tell the user this while they are creating the routine, not after.
 
 ---
 
 ## 1. Loop advance — the main event
 
-**Cadence:** nightly (a weekday-evening slot works well: the PRs are waiting in the morning).
+**Surface:** either; cloud by default, because its queue is a file and it should run whether or
+not the laptop is on. **Cadence:** nightly (a weekday-evening slot works well: the PRs are
+waiting in the morning).
 
 ```
 Follow the /outsystems-loop:design-loop skill procedure for this repo.
@@ -54,9 +74,65 @@ block, then give a five-line summary naming anything left needs-human and why.
 Pick `<N>` with the user. Small (3–5) is usually right: it is the number of PRs they are willing
 to review in one morning, not the number the machine can produce.
 
-## 2. Token drift reconcile — recurring forever
+## 2. Board sync — keep the human view honest
 
-**Cadence:** weekly. Optionally also a webhook on the Figma library publishing.
+**Surface: local only.** **Cadence:** daily, on a working day — mid-morning is a good slot,
+since the session is open and the previous night's PRs have landed on the board.
+
+The board drifts against git the moment a cloud loop run opens PRs it cannot see. This is the
+routine that closes that gap, and it is the reason a board is still worth having alongside a
+cloud loop.
+
+```
+Follow the /outsystems-loop:board-sync skill procedure for this repo, with --reclaim-stale.
+
+Reconcile the board against git and loop/state.json, correct loop/state.json where it
+is wrong — never the board — reclaim any card stranded In Progress past
+board.staleAfterMinutes, and regenerate deliverables.md.
+
+Never move a card to Approved or Done. Reclaim only out of In Progress, and only where
+no live runner holds the lock. Post one comment per reclaim saying which case it was.
+
+If nothing needed doing, say exactly that in one line and stop — a quiet run is the
+expected outcome. Otherwise report the drift corrected, the cards reclaimed, anything
+flagged for a human, and the deliverables.md diff.
+```
+
+Run it once with `--dry-run` in front of the user before scheduling it. Reclaim moves cards, and
+they should watch it get one right before it does so unattended.
+
+## 3. Board ship — merge what the human already signed
+
+**Surface: local only.** **Cadence:** on demand is the honest default. Schedule it hourly only
+on a day the user is actively reviewing, and let it lapse with the session.
+
+Moving a card into `Approved` **is** the approval, so this routine is not deciding anything — it
+is executing a signature already given. That is what makes it safe to schedule at all.
+
+```
+Follow the /outsystems-loop:board-ship skill procedure for this repo.
+
+For each card in the Approved lane, oldest first: find its build, open or reuse a PR,
+squash-merge it into board.shipBase, RE-READ the PR state, and only on MERGED create
+the handover Task and move the card to Handover.
+
+Never use --admin. Never ship a card with no loop:built record — that goes to Blocked.
+Never move a card to Approved or Done. If a merge does not complete, leave the card in
+Approved, comment with the PR link and the mergeStateStatus, and move on.
+
+Report cards shipped with PR and handover links, cards left in Approved and why, and
+cards blocked and why — the incomplete merges first. If the Approved lane was empty,
+say so in one line.
+```
+
+The card must already carry a `loop:built` record, so this can only ever ship work the loop
+built and a human then approved. Both halves are required, and neither is this routine's to
+supply.
+
+## 4. Token-drift reconcile — recurring forever
+
+**Surface:** either; cloud by default. **Cadence:** weekly. Optionally also a webhook on the
+Figma library publishing.
 
 A design system's tokens move after handover, and drift is invisible until something looks wrong
 in production. This is the highest-value recurring routine for a long engagement.
@@ -79,9 +155,9 @@ Never enforce a convention whose status in project.config.json is not `confirmed
 End with a five-line summary.
 ```
 
-## 3. Findings digest — optional, read-only
+## 5. Findings digest — optional, read-only
 
-**Cadence:** daily, or weekly on a slower engagement.
+**Surface:** either. **Cadence:** daily, or weekly on a slower engagement.
 
 ```
 List open issues labeled "finding" in this repo, grouped by severity. Write a short
@@ -106,3 +182,7 @@ The PRs are the output. `loop/REPORT.md` is the run's own account of itself, and
 A run of `unverified` items is a **harness fault**, not a design problem: no browser, or a failed
 stylesheet request because `vendor/outsystems-ui/` was never built. Fix the harness, re-run; never
 relax the gate to make the number go green.
+
+For the two local routines, the failure mode to watch for is the opposite one: **silence**. A
+board routine that stops reporting has almost certainly lost its session rather than found
+nothing to do. Check with the session's cron listing before concluding the board is clean.

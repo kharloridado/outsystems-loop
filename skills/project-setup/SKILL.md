@@ -79,9 +79,14 @@ Two you must also raise, because they cost the most when missed:
   the safe direction.
 
 **On the board.** If they ask for one, set it up as a *view*: `board.drivesLoop` stays `false`.
-The board is never the loop's queue — Projects v2 is GraphQL-only and unreachable from a scheduled
+The board is never the loop's queue — Projects v2 is GraphQL-only and unreachable from a **cloud**
 run, so a board-queued loop dies while claiming a card, before the maker, every time. The queue is
-the signed inventory in `loop/goal.md`, which is a file and readable from anywhere.
+the signed inventory in `loop/goal.md`, which is a file and readable from either surface.
+
+That constrains the board's *reach*, not its automation: `board-sync` and `board-ship` are
+schedulable on the **local** surface, and §7 offers both. See
+`../design-loop/references/surfaces.md` — one file, the whole model, and the only place to state
+it.
 
 ## 2. The toolchain — plugins, agents, MCP servers
 
@@ -390,25 +395,38 @@ Repo not created yet? Offer `gh repo create <owner>/<repo> --private --source=. 
 ## 7. Routines — set them up rather than describing them
 
 The user should not copy prompts into a routines UI. Create the schedule for them, using the
-scheduling capability available in this session (the `schedule` skill or the cron tooling).
+scheduling capability that matches the routine's **surface**
+(`../design-loop/references/surfaces.md`):
 
-**Ask before creating any of them.** A scheduled agent is persistent configuration that runs
+- **cloud** — a routine in Claude Code on the web. Fires whether or not the laptop is on; cannot
+  touch the board.
+- **local** — a schedule inside a Claude session on this machine, via the session's cron tooling
+  or `/loop`. Reaches the board; lives only while that session is open.
+
+**Ask before creating any of them.** A scheduled run is persistent configuration that runs
 unattended and spends the user's budget; it is theirs to authorise. Present the set, let them pick.
 
 See **`references/routines.md`** for the exact prompts. The default set:
 
-| Routine | Cadence | Why |
-|---|---|---|
-| **Loop advance** | nightly | Builds `queued` items → one PR each. The main event. |
-| **Token drift reconcile** | weekly | Re-pulls the Figma library and PRs any token drift. Recurring forever — a design system's tokens move. |
-| **Findings digest** | daily, optional | Read-only summary of open findings by severity. |
+| Routine | Surface | Cadence | Why |
+|---|---|---|---|
+| **Loop advance** | cloud | nightly | Builds `queued` items → one PR each. The main event. |
+| **Board sync** | **local** | daily | Reconciles the board against the PRs the nightly run opened, reclaims stale claims, regenerates `deliverables.md`. Skip it and the board quietly stops describing reality. |
+| **Board ship** | **local** | on demand / hourly on a review day | Merges what the human already approved and opens the handover Task. |
+| **Token drift reconcile** | cloud | weekly | Re-pulls the Figma library and PRs any token drift. Recurring forever — a design system's tokens move. |
+| **Findings digest** | either | daily, optional | Read-only summary of open findings by severity. |
 
-Two constraints to state honestly rather than discover later:
+Four constraints to state honestly rather than discover later:
 
-- **A routine needs the Figma connector attached**, or it cannot freeze a ref and every item goes
-  `needs-human`. Tell them to attach it when they create the routine.
-- **A routine stops at every checkpoint** in `loop/goal.md`, and never approves, merges, or opens a
-  handover. It advances work and opens PRs; the human signs.
+- **A routine needs the Figma connector attached** (loop advance, token drift), or it cannot freeze
+  a ref and every item goes `needs-human`. Tell them to attach it when they create the routine.
+- **A routine stops at every checkpoint** in `loop/goal.md`, and never approves, merges outside
+  `board-ship`, or opens a handover for unmerged work. It advances work and opens PRs; the human
+  signs.
+- **The two board routines only fire while a Claude session is open on this machine**, and a
+  recurring session job expires after 7 days. Say so as you create them — a routine the user thinks
+  is running unattended, and isn't, is worse than one they know to re-arm.
+- **Run `board-sync --dry-run` in front of them once** before scheduling it. Reclaim moves cards.
 
 ## 8. Verify — do not report success you have not seen
 
@@ -447,7 +465,8 @@ Report in this shape — short, and honest about what is not done:
 - **Toolchain** — both plugins and their scope, the ODC MCP endpoint, the Figma connector, `gh`,
   the browser. One line each, each either working or named as outstanding.
 - **Queued** — N deliverables, in build order, with the tier gates that will pause the run.
-- **Routines** — what was created and when it first fires.
+- **Routines** — what was created, on which surface, and when it first fires. Name the local
+  ones explicitly as "only while a Claude session is open here".
 - **Verified** — the gates, with their actual results.
 - **Outstanding** — every `TBD` convention and why it is blank, an unpinned submodule, a missing
   connector or auth, any deliverable with no Figma node. **Name the consequence, not just the

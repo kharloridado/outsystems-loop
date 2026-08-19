@@ -1,25 +1,36 @@
 ---
 name: board-ship
-description: Ship the deliverables a human has approved on the GitHub Project board. For each card in the Approved lane, open a PR from its build branch, squash-merge it into main, then create the handover Task issue and move the card to Handover. Use this whenever the user asks to ship, merge, or release approved board items, or on a schedule. Needs no Figma and no browser, so it is the one stage of the board loop that is safe to run headless or in a cloud routine.
+description: Ship the deliverables a human has approved on the GitHub Project board. For each card in the Approved lane, open a PR from its build branch, squash-merge it into main, then create the handover Task issue and move the card to Handover. Use this whenever the user asks to ship, merge, or release approved board items, or on a schedule. Needs no Figma and no browser, so it runs headless — but it runs on a LOCAL schedule only, because a GitHub Project board is unreachable from a cloud routine.
 ---
 
 # board-ship — `Approved` → merged to `main` → handover Task → `Handover`
 
 The human-approved half of the board loop. `board-advance` builds; **this ships**.
 
-Read first: `../design-loop/references/board-api.md` (the `gh` cookbook, with the traps) and
-`../design-loop/references/status-map.md` (the lanes and who may move them). If those relative
-paths do not resolve, they are at `${CLAUDE_PLUGIN_ROOT}/skills/design-loop/references/`.
+Read first: `../design-loop/references/board-api.md` (the `gh` cookbook, with the traps),
+`../design-loop/references/status-map.md` (the lanes and who may move them) and
+`../design-loop/references/surfaces.md` (where this may run). If those relative paths do not
+resolve, they are at `${CLAUDE_PLUGIN_ROOT}/skills/design-loop/references/`.
 
-## What makes this stage safe to automate
+## What makes this stage safe to automate — and where it may run
 
 The human already signed off. Moving a card into `Approved` **is** the approval — that is why
 this skill may merge to `main` without asking again, and why it may never move a card into
-`Approved` itself.
+`Approved` itself. It is executing a signature already given, not deciding anything.
 
-Everything here is server-side (`gh pr create --head`, `gh pr merge`), so this skill needs no
-working tree of the item's content, no Figma MCP and no browser. That is what makes it the
-only board stage that can run in a cloud routine.
+Everything here is server-side (`gh pr create --head`, `gh pr merge`), so it needs no working
+tree of the item's content, no Figma MCP and no browser. That makes it schedulable — but on a
+**local** schedule only. It reads and writes the board on every card, and `surfaces.md` records
+the measurement: the board is unreachable from a cloud routine, where every fire is a silent
+no-op.
+
+So: at the keyboard, or on a local schedule inside an open Claude session — the session's cron
+tooling, or `/loop`. On demand is the honest default; hourly is reasonable on a day the user is
+actively reviewing, and it should lapse with the session. Because a local schedule only fires
+while a session is open, every fire must be **catch-up safe**: this skill selects on the
+`Approved` lane as it is *now* rather than on a cursor, reuses an existing PR instead of opening
+a second, and dedups the handover by `[node:<id>]`. Missed fires then cost nothing, and a fire
+with an empty `Approved` lane reports one line and exits.
 
 ## Rules that override any judgment call
 

@@ -1,6 +1,6 @@
 ---
 name: board-sync
-description: Reconcile the GitHub Project board against git and loop/state.json, reclaim cards stranded In Progress by a crashed run, and regenerate the deliverables.md snapshot. Use this when the board and the repo look out of step, when a run died mid-item, when a card has been stuck In Progress, or on a weekly cadence. Read-mostly and needs no Figma.
+description: Reconcile the GitHub Project board against git and loop/state.json, reclaim cards stranded In Progress by a crashed run, and regenerate the deliverables.md snapshot. Use this when the board and the repo look out of step, when a run died mid-item, when a card has been stuck In Progress, or on a daily cadence. Read-mostly and needs no Figma. Runs at the keyboard or on a local schedule; the board is unreachable from a cloud routine.
 ---
 
 # board-sync — reconcile, reclaim, snapshot
@@ -10,8 +10,10 @@ nor `board-ship`, and it exists mostly so that **stale-lock reclaim lives somewh
 `board-advance` reclaimed stale claims, two concurrent runs would reclaim each other's live
 work.
 
-Read first: `../design-loop/references/status-map.md` and
-`../design-loop/references/board-api.md`.
+Read first: `../design-loop/references/status-map.md`,
+`../design-loop/references/board-api.md`, and `../design-loop/references/surfaces.md` —
+the last one decides **where this may run**: local only, because Projects v2 is unreachable
+from a cloud routine. Local does not mean by hand; see *Running on a schedule* below.
 
 ## Modes
 
@@ -81,6 +83,33 @@ It earns its place three times over: it is the human-readable map `WORKFLOW.md` 
 diffable in-repo record of what was accepted into scope and when, and — for a project whose
 `Inventory source` is `board` — the client-showable artifact that stands in for a signed
 inventory table. Someone with authority over scope can counter-sign it weekly.
+
+## Running on a schedule
+
+This is the routine most worth having, and `surfaces.md` says where: **a local schedule, inside
+an open Claude session** — the session's cron tooling, or `/loop`. It cannot go on a cloud
+routine, because every board read there is a no-op.
+
+Daily, mid-morning, is the slot that earns its keep. A cloud loop run opens PRs overnight that
+the board cannot see; this is what closes that gap before the user looks at the board. Schedule
+it with `--reclaim-stale` — reconcile-only fires are nearly free, and the reclaim is the half
+that rescues a crashed night.
+
+Three things follow from a schedule that only fires while a session happens to be open, and this
+skill already satisfies all three — keep it that way:
+
+1. **Reconcile from current state, never from a diff since the last run.** Missed fires must cost
+   nothing. Compare board, git and `state.json` as they are now.
+2. **Be idempotent.** A second fire over the same cards posts no duplicate comment and reclaims
+   nothing twice.
+3. **A quiet run is the expected outcome.** Report it in one line and exit; do not dress a no-op
+   up as a failure.
+
+Being unattended relaxes nothing. Rules 2 and 3 above hold on every fire: no card reaches
+`Approved` or `Done`, and only `--reclaim-stale` moves a card at all.
+
+Run it once with `--dry-run` in front of the user before scheduling it. Reclaim moves cards, and
+they should watch it get one right first.
 
 ## 4. Report
 
