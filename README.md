@@ -49,8 +49,8 @@ get the same version.
 | `/outsystems-loop:project-setup` | **Start here on a fresh clone.** One pass: interview → config → deps + submodule → labels → deliverables into the signed inventory and the queue → routines → verify it all builds. |
 | `/outsystems-loop:design-loop` | The orchestrator: freeze ref → maker → checker → commit → **one PR per deliverable** → findings → report. Queue is the signed inventory. |
 | `/outsystems-loop:revalidate` | Re-run the checker against an **already-built** artifact, item or PR — no maker, no rebuild. For review questions, hand-edits, or a verdict you distrust. |
-| `/outsystems-loop:board-ship` | Board *view*, local only: `Approved` → PR → squash-merge to `main` → handover Task → `Handover`. |
-| `/outsystems-loop:board-sync` | Board *view*, local only: reconcile board/git/state, regenerate `deliverables.md`. |
+| `/outsystems-loop:board-ship` | Board *view*, local surface: `Approved` → PR → squash-merge to `main` → handover Task → `Handover`. |
+| `/outsystems-loop:board-sync` | Board *view*, local surface: reconcile board/git/state, reclaim stale claims, regenerate `deliverables.md`. |
 | `figma-to-outsystems` | Master workflow orchestrator. |
 | `outsystems-component-audit` | Triage a design: exists as-is / customize / build custom (L1–L5). |
 | `outsystems-token-extractor` | Figma variables → `:root` custom properties. |
@@ -110,18 +110,36 @@ actually looking.
 The loop **never merges and never approves**. It stops at an open PR, and the handover Task is
 opened on the *next run* after that PR has merged — self-healing, so a crashed run loses nothing.
 
-## The queue is a file, not a board
+## Two surfaces, and the queue is a file
 
-`loop/goal.md`'s signed inventory is the queue; `loop/state.json` holds item status. A GitHub
-Project board, where a project points at one, is a **human view** and is never read as the queue.
+Everything in this plugin runs on one of two surfaces, and there is exactly one question to ask:
+**can it reach the board?**
 
-That is not a style preference. Projects v2 is GraphQL-only: a scheduled run has no `gh` on PATH,
-no `project_*` tool, no GraphQL passthrough, and raw GraphQL to `api.github.com` is refused by the
-egress proxy. A board-queued loop therefore fails while claiming a card — before the maker, every
-time, silently. Measured on a real project: an hourly board routine fired nine times a weekday and
-every single run was a guaranteed no-op. Files in the clone are readable from anywhere.
+| Surface | What it is | Board |
+|---|---|---|
+| **local** | A Claude session on the laptop — at the keyboard, or on a schedule inside that session | **yes** |
+| **cloud** | A routine in Claude Code on the web, firing into a fresh container | **no** |
 
-`board-ship` and `board-sync` remain for local, human-invoked use against that view. They expect:
+**Scheduled is not the axis.** Both surfaces schedule; only the surface decides reach. A local
+schedule lives inside an open Claude session, so it runs "while the laptop is open" in the literal
+sense, and every local routine is written to be catch-up safe about missed fires. The single
+statement of all this is `skills/design-loop/references/surfaces.md`; the prompts for each routine,
+on both surfaces, are in `skills/project-setup/references/routines.md`.
+
+The board is cloud-unreachable because Projects v2 is GraphQL-only: a cloud run has no `gh` on
+PATH, no `project_*` tool, no GraphQL passthrough, and raw GraphQL to `api.github.com` is refused
+by the egress proxy. Measured on a real project — an hourly board routine fired nine times in a
+weekday and every single run was a guaranteed no-op.
+
+**That is why the queue is a file.** `loop/goal.md`'s signed inventory is the queue and
+`loop/state.json` holds item status, so `design-loop` reads the same queue on both surfaces and a
+nightly build needs nobody's laptop. A board-queued loop would instead fail while claiming a card,
+before the maker, every time and silently. A GitHub Project board, where a project points at one,
+is a **human view**.
+
+`board-sync` and `board-ship` work against that view, on the local surface — which means at the
+keyboard *or* on a local schedule, and `board-sync` daily is what keeps the board honest against
+PRs a cloud loop opened overnight. They expect:
 
 - **the eight `Status` lanes**, in order: `Backlog · Ready · In Progress · Ready for Review ·
   Approved · Handover · Done · Blocked`, plus the `FigmaNode`, `Branch`, `Runner`, `Tier`, `Level`

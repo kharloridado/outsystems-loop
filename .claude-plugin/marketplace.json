@@ -9,7 +9,7 @@
       "name": "outsystems-loop",
       "source": "./",
       "description": "Agentic Figma → OutSystems design-system workflow: token extraction, component audit, BEM CSS, Web Components, flag-don't-fix design findings, and an autonomous maker/checker build loop with a rendered-fidelity review gate.",
-      "version": "2.0.0",
+      "version": "2.1.0",
       "category": "development",
       "keywords": ["outsystems", "odc", "figma", "design-system"]
     }
