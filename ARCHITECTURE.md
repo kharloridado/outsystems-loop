@@ -62,7 +62,16 @@ Read these; never restate them.
 Figma ingestion · token translation · BEM naming · Web Components and their internals · the
 flag-don't-fix findings pipeline · Style Guide pages · git artifacts · onboarding and project
 context · the maker/checker loop, the rendered-fidelity gate, risk tiers, adversarial refutation ·
-one PR per deliverable · the WCAG 2.2 delta.
+one PR per deliverable · the WCAG 2.2 delta · **driving Mentor over the MCP and verifying what
+it actually did**.
+
+That last one passes the test in both directions. *"`LayoutTopMenu` exposes six placeholders"*
+is upstream, and `outsystems-mentor-build` cites it. *"Read the module's theme for its default
+layout before prompting, publish between turns, and never trust `change_applied: true` without
+loading the page"* is judgement about a tool upstream does not know exists — so it is ours. The
+Expression-escaping trap sits there too, by the absence test: upstream documents the widget
+hierarchy, but nothing upstream covers what happens when an agent instructs a Traditional Web
+property on an ODC reactive widget and is told it worked.
 
 ## What 2.0 removed, and where it went
 

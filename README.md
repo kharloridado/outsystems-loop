@@ -57,6 +57,7 @@ get the same version.
 | `outsystems-figma-integration` | Read Figma directly via MCP. |
 | `outsystems-bem-css` | BEM CSS that overrides native widgets, token-only. |
 | `outsystems-web-component` | Vanilla-JS Web Components + Block wrapper (L5 only). |
+| `outsystems-mentor-build` | Driving a build into a live ODC module through Mentor/MCP, and verifying it landed. |
 | `outsystems-design-findings` | The flag-don't-fix pipeline: classify, refute, route. |
 | `outsystems-style-guide-doc` | Live Style Guide pages. |
 | `outsystems-git-helpers` | Conventional commits, branches, PRs, changelog. |
