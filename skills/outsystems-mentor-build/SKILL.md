@@ -50,10 +50,28 @@ not because this skill restates them:
   into that Layout's *named placeholders* — the page title in `Title`, the body in
   `MainContent`. Content authored at the screen root renders detached: no menu, no header,
   no chrome.
-- **`Container` is the last resort in the widget hierarchy, not the default.** Reaching for
-  a styled `Container` where an OS UI block or a semantic `AdvancedHtml` tag exists is a
-  downgrade, and for headings it is an accessibility regression. See the polish checklist's
-  typography table.
+- **`Container` is the last resort in the widget hierarchy, not the default.** Upstream's
+  order is: **OS UI block → `AdvancedHtml` with a semantic HTML5 tag → platform interactive
+  widget → `Container`**. Reaching for a styled `Container` where any of the first three
+  exists is a downgrade, and for headings it is an accessibility regression. See the polish
+  checklist's typography table.
+
+  Read the hierarchy as a *search order you must actually walk*, not a preference. The two
+  steps skipped most often, because a `Container` looks right on screen either way:
+
+  | Content | Correct | The downgrade |
+  | --- | --- | --- |
+  | Screen title | `AdvancedHtml Tag="h1"` in the Layout's `Title` placeholder — **one per screen** | plain text in `Title`, which emits no heading at all |
+  | Titled group of content | the **`Section`** block (`Title` + `Content` placeholders), or **`SectionGroup`** to compose several with a sticky index | `Container` + a styled title `Container` |
+  | Section heading | `AdvancedHtml Tag="h2"`–`"h6"`, in document order, no skipped levels | styled `Container` |
+  | Body copy | `AdvancedHtml Tag="p"` | `Container` |
+
+  **Confirm the block before you name it in a prompt.** Search the tenant for it and read
+  its real placeholders — they vary by OS UI version. `Section` in `OutSystemsUI_2_16`
+  exposes `Title` and `Content` only, while the pattern reference also documents an
+  `Actions` placeholder; a prompt that fills `Actions` against that version fails. And if
+  Mentor cannot find a block, it must **say so, not silently substitute a `Container`** —
+  tell it that explicitly in the prompt.
 
 ## ⚠ Never build UI as an HTML literal
 
@@ -128,6 +146,26 @@ After publishing, check in this order:
    means the UI was built as a literal.
 5. **The widget tree is what you asked for** — the elements are real widgets, headings are
    real headings, not one `Expression`.
+
+   **Assert the document outline, don't eyeball it.** This is the one check that catches a
+   page built entirely from styled `Container`s, and nothing else in the pipeline can: such
+   a page renders *pixel-perfect*, passes validation with zero errors, and looks correct in
+   every screenshot. In the browser:
+
+   ```js
+   [...document.querySelectorAll('h1,h2,h3,h4,h5,h6')].map(h => h.tagName + ': ' + h.textContent.trim())
+   ```
+
+   - **Zero headings on a content screen is a FAIL**, always. It means the `Title`
+     placeholder got plain text and every section heading is a `div`.
+   - Expect **exactly one `h1`** (the screen title, from the Layout's `Title` placeholder)
+     and one `h2` per section, in document order.
+   - A useful companion signal: count `div`s inside your content root. A specimen or detail
+     screen in the low hundreds of `div`s with no headings is the signature of this defect.
+
+   Measured on a real build: two reference screens shipped with **0** headings and 108 and
+   246 `div`s. Both had passed a Mentor turn reporting `change_applied: true`, zero
+   validation errors, and a visual screenshot review.
 6. **The content itself** — counts, values, order, against the spec of record.
 
 Read the model back through the context lookups as well as looking at the page, but treat
