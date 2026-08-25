@@ -39,7 +39,8 @@ Guessing either is how a screen ends up detached from the app it lives in.
 | Which Layout, its placeholders, one-Layout-per-screen, the default-Layout deletion trap | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/layouts.md` |
 | Which widget for which content, and the semantic hierarchy | `vendor/outsystems-frontend-skills/common/atomic-design.md` |
 | Headings, typography hierarchy, section structure | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/polish-checklist.md` |
-| Every block's arguments, placeholders, events | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md` |
+| **Every block's arguments, placeholders, events — read this BEFORE reaching for a `Container`** | `vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/blocks-index.md` |
+| Picking the right block for a piece of content | `vendor/outsystems-frontend-skills/.claude/skills/references/component-selection.md` |
 | Where CSS belongs — Theme vs Screen vs Block | `vendor/outsystems-frontend-skills/common/css-customization.md` |
 | Semantic structure and landmarks for a11y | `vendor/outsystems-frontend-skills/common/accessibility.md` |
 
@@ -53,12 +54,16 @@ not because this skill restates them:
 - **`Container` is the last resort in the widget hierarchy, not the default.** Reaching for
   a styled `Container` where an OS UI block or a semantic `AdvancedHtml` tag exists is a
   downgrade, and for headings it is an accessibility regression. See the polish checklist's
-  typography table.
+  typography table, and the ladder below — this is the mistake that survives fixing the
+  obvious one.
 
-## ⚠ Never build UI as an HTML literal
+## ⚠ Build from the widget ladder — not from markup, and not from bare Containers
 
-Do not hand Mentor a block of markup to drop into a widget. Two distinct things are being
-ruled out, and one thing is **not**:
+There are **two** mistakes here, and fixing only the first one still leaves a bad screen.
+
+### Mistake 1 — pasting markup
+
+Do not hand Mentor a block of HTML to drop into a widget:
 
 | Approach | Verdict |
 | --- | --- |
@@ -66,10 +71,9 @@ ruled out, and one thing is **not**:
 | A whole layout as an HTML string in an **`AdvancedHtml`** widget | **Never** — same defect, different widget. |
 | `AdvancedHtml` with a **single semantic tag** (`h1`…`h6`, `p`, `strong`) wrapping real content | **Correct, and upstream-mandated.** Not what this rule bans. |
 
-The ban is on *pasting markup instead of building widgets*. It is not a ban on
+The ban is on *pasting markup instead of building widgets*. It is **not** a ban on
 `AdvancedHtml`, which is how you get a real `<h2>` instead of a `<div>` that merely looks
-like one. An over-broad reading of this rule produces screens whose every heading is a
-styled `Container` — which is its own defect.
+like one.
 
 Why the literal is wrong:
 
@@ -83,10 +87,66 @@ Why the literal is wrong:
   page will render `<div class="…">` as visible text. The model is not lying about what it
   stored; the property has no effect on that widget.
 
-Build the tree instead: name each widget, its Style Class, and its literal text. A widget
-tree in a prompt is longer to write than a blob of HTML and dramatically more reliable to
-apply — measured on one real screen, a 52-item grid took `internal_retry_count` **1** and
-**0** as two Container-tree turns, against **9** for the single HTML literal.
+### Mistake 2 — a tree of generic Containers
+
+Escaping the literal by building everything from `Container` + hand-rolled classes is the
+*second* failure, and it is the easy one to feel good about. Upstream's hierarchy is explicit
+(`.claude/commands/design-to-app.md`, citing `ui-frameworks/outsystems-ui/SKILL.md`):
+
+> OS UI block → `AdvancedHtml` with semantic HTML5 tag → platform interactive widget →
+> `Container` (last resort only). Never style a `Container` to LOOK like a card/button/banner
+> — use the matching block.
+
+So walk the ladder for **every** part of the tree, and only fall to `Container` when nothing
+above it fits:
+
+| The thing you are building | Reach for | Not |
+| --- | --- | --- |
+| A titled group of content | `Section` (`UsePadding`; `Title` / `Actions` / `Content`) | a `Container` + your own heading + border CSS |
+| A responsive grid of items | `Gallery` (`RowItemsDesktop` / `RowItemsTablet` / `RowItemsPhone`, `ItemsGap`) | a `Container` with your own flex/`nowrap` rules |
+| A heading | `AdvancedHtml Tag="h2"` | a `Container` styled to look like one |
+| A card, tabs, an accordion, a list | the matching OS UI block — check `blocks-index.md` | a parallel implementation |
+
+Two things you get for free by doing this, which a `Container` tree makes you re-invent
+badly: **the responsive behaviour** (a `Gallery` reflows by breakpoint; a hand-rolled
+`flex-wrap: nowrap` row does not) and **the semantics** (a `Section` title is a real heading;
+a styled `div` is not).
+
+"Nothing in OutSystems UI does this" is a claim about a catalog this skill does not carry.
+Check `blocks-index.md` before making it.
+
+### What a good prompt looks like
+
+Name each widget, its block type, its Style Class and its literal text — a tree, not markup:
+
+```
+Section [uswds-specimen__section]  UsePadding=False
+  Title:   "Theme palette"
+  Content:
+    Gallery [uswds-specimen__ramp]  RowItemsDesktop=7 RowItemsTablet=4 RowItemsPhone=2 ItemsGap="xs"
+      Content:
+        Container [uswds-specimen__item]
+          Container [uswds-specimen__chip uswds-swatch--base-lightest]   (empty)
+          Container [uswds-specimen__name] "--color-base-lightest"
+          Container [uswds-specimen__hex]  "#F0F0F0"
+```
+
+`Container` survives at the leaves — a colour chip really is just a painted box, and that is
+what last-resort means. It does not survive as the layout.
+
+### Measured
+
+On one real 52-swatch screen, the same content three ways:
+
+| Built as | `internal_retry_count` | Outcome |
+| --- | --- | --- |
+| One HTML literal in an Expression | **9** | Shipped rendering its own tags as visible text |
+| A tree of 233 generic Containers | **1**, then **0** | Rendered correctly; responsive behaviour hand-rolled, headings not headings |
+| `Section` + `Gallery` + leaf Containers | — | Grid and titled groups come from the framework |
+
+The widget tree is both more reliable for the builder *and* the architecturally correct
+answer. But note what the middle row cost: it passed a browser check and still had to be
+redone, because "not a literal" is a lower bar than "the right widget".
 
 ## Sequencing turns
 
@@ -128,7 +188,11 @@ After publishing, check in this order:
    means the UI was built as a literal.
 5. **The widget tree is what you asked for** — the elements are real widgets, headings are
    real headings, not one `Expression`.
-6. **The content itself** — counts, values, order, against the spec of record.
+6. **The right widgets, not merely real ones.** A screen built entirely from `Container` will
+   pass every check above and still be wrong. Ask: is each titled group a `Section`, each
+   grid a `Gallery`, each heading an `AdvancedHtml` tag? Resize the window — if the layout
+   does not reflow, the responsive behaviour was hand-rolled instead of inherited.
+7. **The content itself** — counts, values, order, against the spec of record.
 
 Read the model back through the context lookups as well as looking at the page, but treat
 the browser as the authority. Note that the context lookups can lag a publish by some
