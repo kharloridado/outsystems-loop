@@ -131,20 +131,32 @@ unstyled.
 This shipped. On one `ButtonSpecimen` screen, 14 of 25 buttons rendered as raw browser
 buttons behind a green build gate and a clean Mentor validation.
 
-**How to tell which mechanism produced a wrong class string.** The platform adds classes of
-its own (e.g. `ThemeGrid_MarginGutter`). If those are *also* missing from the rendered
-element, the class attribute was replaced rather than appended — the signature of an
-Extended Property `class`. If the platform's classes survive and only the base is absent, the
-Style Classes value itself was written without it.
+**Telling the two mechanisms apart from the DOM — a weak signal, so do not lean on it.** The
+platform adds classes of its own (e.g. `ThemeGrid_MarginGutter`), and their absence alongside
+a missing base *suggests* the attribute was replaced rather than appended. But it is a
+correlate, not the thing:
 
-**Check it in the browser, not in the model:**
+- **False negative.** A Button with its margin property set to `None` emits no
+  `ThemeGrid_MarginGutter` at all. Absence is not evidence of a clobber.
+- **It misses the failure you are more likely to have.** A page can pass this check on every
+  button while many carry the *wrong variant* — a well-formed class list with the wrong
+  contents. Measured on one real screen: 25/25 passed the gutter check, 11 were wrong.
+
+Measure `btn` presence directly — it is one line and it is the property you care about — and
+assert the expected *variant* per row on top of it. Ask the model to read its own tree when
+you need to know the mechanism.
+
+**Check it in the browser, not in the model** — and assert the variants, not just the base:
 
 ```js
 const b = [...document.querySelectorAll('button')];
-({ total: b.length, missingBase: b.filter(x => !x.classList.contains('btn')).length })
+({ total: b.length,
+   missingBase: b.filter(x => !x.classList.contains('btn')).length,
+   variants: b.reduce((m, x) => (m[x.className] = (m[x.className] || 0) + 1, m), {}) })
 ```
 
-`missingBase` must be 0.
+`missingBase` must be 0, and the variant tally must match what the design says each row holds.
+A base-only check passes a page whose variants are scrambled.
 
 **Defensive CSS is the belt, not the braces.** Writing the base rule as
 `:is(.btn, [class*="ds-btn--"])` makes a modifier self-sufficient if someone does drop the
@@ -200,6 +212,31 @@ Read the model back through the context lookups as well as looking at the page, 
 the browser as the authority. Note that the context lookups can lag a publish by some
 seconds; a screen missing from `context_screens` immediately after a successful publish is
 usually index lag, and the browser settles it.
+
+### Per-widget property edits can silently no-op — check the revision number
+
+Bulk work (replacing a theme stylesheet, a screen stylesheet) applies reliably. **Per-widget
+property edits are a different story**, and the failure is not an error — it is a confident,
+itemised, entirely fabricated report.
+
+Observed across seven attempts on one screen: two partial applications that moved values onto
+the wrong widgets, one that damaged widgets which had been correct, and one complete no-op
+whose terminal result carried a verbatim per-widget "read-back" table and six passing
+self-checks for changes that were never written.
+
+Two cheap tells, neither of which requires trusting the summary:
+
+1. **The publish creates no new revision.** A publish that returns `succeeded` with the SAME
+   revision number as the previous one deployed nothing, whatever `no_changes_detected` says.
+   Record the revision before you start.
+2. **A read-back that disagrees with itself.** If you ask the model to re-read the values it
+   just wrote and some *unrelated* property (Enabled, caption, order) has drifted from an
+   earlier enumeration of the same tree, the read-back is describing a tree that does not
+   exist. Treat the whole report as void.
+
+When per-widget edits fail twice, stop and hand the human a checklist. Three more turns cost
+more than the two minutes the edit takes in Studio, and each one risks damaging widgets that
+were already right.
 
 ## Reporting
 
