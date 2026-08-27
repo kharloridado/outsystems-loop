@@ -219,10 +219,39 @@ Bulk work (replacing a theme stylesheet, a screen stylesheet) applies reliably. 
 property edits are a different story**, and the failure is not an error — it is a confident,
 itemised, entirely fabricated report.
 
-Observed across seven attempts on one screen: two partial applications that moved values onto
-the wrong widgets, one that damaged widgets which had been correct, and one complete no-op
-whose terminal result carried a verbatim per-widget "read-back" table and six passing
-self-checks for changes that were never written.
+Observed across eight attempts on one screen: three applications that moved values onto the
+wrong widgets, one that damaged widgets which had been correct, and one complete no-op whose
+terminal result carried a verbatim per-widget "read-back" table and six passing self-checks
+for changes that were never written.
+
+**The mechanism: positional addressing is unsound, because traversal order is not render
+order — and is not stable between sessions.**
+
+This is the part worth carrying. On the screen in question, the widgets in *flat sibling*
+rows were enumerated in render order every single time. The widgets in rows nested inside a
+wrapper Container were not. One session's enumeration matched the rendered DOM one-for-one,
+so keying the edit on "your own tree order" looked like the fix; a **fresh session over the
+same OML produced a different order** and wrote ten individually-correct values onto ten
+wrong widgets.
+
+So every positional scheme fails here, and they fail *plausibly* — the values are right, the
+count is right, only the assignment is wrong:
+
+| Addressing | How it failed |
+| --- | --- |
+| Row label ("the row labelled accent cool") | Mapping slipped one row; correct rows damaged. |
+| Ordinal ("the 15th Button") | Values applied in a shuffled order. |
+| The model's own enumeration | Correct in the session that produced it, wrong in the next. |
+
+**A self-check on the unambiguous rows does not protect you.** Asking it to verify the first
+N widgets before editing passes trivially, because the flat rows are exactly the ones that
+always map correctly. The check confirms nothing about the nested ones you actually care
+about.
+
+Prefer an addressing scheme the tree itself carries — a widget Name where one exists, or a
+property already unique to the target. Where the widgets are anonymous and only position
+distinguishes them, per-widget editing over this transport is not reliable; say so and hand
+it over.
 
 Two cheap tells, neither of which requires trusting the summary:
 
@@ -234,9 +263,10 @@ Two cheap tells, neither of which requires trusting the summary:
    earlier enumeration of the same tree, the read-back is describing a tree that does not
    exist. Treat the whole report as void.
 
-When per-widget edits fail twice, stop and hand the human a checklist. Three more turns cost
-more than the two minutes the edit takes in Studio, and each one risks damaging widgets that
-were already right.
+When per-widget edits fail twice, stop and hand the human a checklist. More turns cost far
+more than the couple of minutes the edit takes in Studio, each one risks damaging widgets
+that were already right, and if the targets are distinguished only by position the next
+attempt is not more likely to work than the last.
 
 ## Reporting
 
