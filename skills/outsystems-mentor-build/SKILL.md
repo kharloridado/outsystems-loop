@@ -88,6 +88,69 @@ tree in a prompt is longer to write than a blob of HTML and dramatically more re
 apply — measured on one real screen, a 52-item grid took `internal_retry_count` **1** and
 **0** as two Container-tree turns, against **9** for the single HTML literal.
 
+## Classing a widget — Style Classes first, Extended Properties as the fallback
+
+A widget gets its classes from the **Style Classes** property. Use it whenever it can do the
+job. Reach for an **Extended Properties** entry named `class` only when Style Classes cannot
+— and when you do, carry the platform's classes yourself.
+
+| Mechanism | What it does |
+| --- | --- |
+| **Style Classes** property | **Prefer this.** Appends to what the platform already put on the element. |
+| Extended Property `class` | **Fallback only.** Sets the raw HTML attribute, *replacing* the platform's own classes wholesale. |
+
+The order matters because of that difference: Style Classes adds, an Extended Property
+`class` overwrites. Falling back is fine when it is the only way to express what you need —
+but the moment you do, every class the platform would have supplied becomes yours to
+restate, `btn` and any grid or layout classes included.
+
+The failure mode is silent and total: the widget keeps rendering, so nothing in the pipeline
+objects, but it has quietly lost every class the platform gave it.
+
+**Buttons always keep the platform `btn` base.** A Button's classes must read `btn` first,
+then any variant:
+
+    btn                         <- correct: a bare Button is already the low-emphasis variant
+    btn btn-primary             <- correct: framework variant
+    btn uswds-btn--secondary    <- correct: design-system variant, base still present
+    uswds-btn--secondary        <- WRONG: no base
+
+The platform does **not** prepend `btn` for you — whatever the class string says is what
+ships. Put the base and the modifier in one field together, and do not split them across
+Style Classes and a second mechanism. If a Button has to be classed through an Extended
+Property `class`, `btn` must appear in that value too; nothing adds it back.
+
+**Why the base matters more than it looks.** A design-system button stylesheet typically
+puts every visual property (background, border, padding, radius, type) on the `.btn` base
+and lets the variant classes assign nothing but custom properties. That collapses dozens of
+states into a flat, readable cascade — at the cost of zero graceful degradation. A button
+carrying only `uswds-btn--secondary` sets nine custom properties that **nothing reads**, and
+falls back to the browser's own `2px outset` / `padding: 1px 6px` chrome. Not degraded:
+unstyled.
+
+This shipped. On one `ButtonSpecimen` screen, 14 of 25 buttons rendered as raw browser
+buttons behind a green build gate and a clean Mentor validation.
+
+**How to tell which mechanism produced a wrong class string.** The platform adds classes of
+its own (e.g. `ThemeGrid_MarginGutter`). If those are *also* missing from the rendered
+element, the class attribute was replaced rather than appended — the signature of an
+Extended Property `class`. If the platform's classes survive and only the base is absent, the
+Style Classes value itself was written without it.
+
+**Check it in the browser, not in the model:**
+
+```js
+const b = [...document.querySelectorAll('button')];
+({ total: b.length, missingBase: b.filter(x => !x.classList.contains('btn')).length })
+```
+
+`missingBase` must be 0.
+
+**Defensive CSS is the belt, not the braces.** Writing the base rule as
+`:is(.btn, [class*="ds-btn--"])` makes a modifier self-sufficient if someone does drop the
+base, and keeps specificity at 0,1,0. Worth doing — but it repairs the stylesheet, not the
+widget, and the widget is still wrong. Fix both.
+
 ## Sequencing turns
 
 - **One coherent section per turn.** A turn carrying an entire large screen is the least
@@ -129,6 +192,9 @@ After publishing, check in this order:
 5. **The widget tree is what you asked for** — the elements are real widgets, headings are
    real headings, not one `Expression`.
 6. **The content itself** — counts, values, order, against the spec of record.
+7. **The rendered class strings**, for anything you styled. A widget that lost its
+   platform base class still renders, so only the DOM shows it — see "Classing a widget"
+   above for the one-liner.
 
 Read the model back through the context lookups as well as looking at the page, but treat
 the browser as the authority. Note that the context lookups can lag a publish by some
