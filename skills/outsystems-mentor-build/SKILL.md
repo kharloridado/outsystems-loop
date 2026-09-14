@@ -239,6 +239,25 @@ actually shipped.
 you want here, and it means you must not "helpfully" put a comment or a spacer inside the
 placeholder.
 
+**Know what the collapse rule actually weighs, because the intuition runs backwards.**
+`.placeholder-empty:empty` scores **(0,2,0)** — `:empty` is a pseudo-*class*, so it counts in
+the class column, not the element column. Getting this wrong in either direction costs you:
+
+- A design-system rule like `.my-layout .my-property-bar` is *also* (0,2,0). It does not
+  out-rank the collapse — it **ties** it, and the tie is settled by load order. Your theme
+  loads after the framework, so you win every time. That means **an equally specific
+  `display` in your own file silently defeats the collapse**; you do not need a more specific
+  one, and reviewers looking for a specificity escalation will not find one.
+- Conversely a single-class rule (`.my-property-bar`, (0,1,0)) genuinely loses to the
+  framework and appears to work. Do not bank it — it wins by accident and breaks the moment
+  the selector picks up a second class.
+
+The durable fix is not arithmetic, it is structure: **put no `display` on the band at all.**
+Style the band (background, borders, shadow) on the placeholder, and put the flex row on the
+inner `ThemeGrid_Container` per rule 3. Then the two mechanisms never compete. Back it with a
+probe that renders a genuinely empty placeholder and measures `display: none` — an argument in
+a comment is not a guard, and this exact bug survived a clean validation and a green publish.
+
 ### 3. Content inside a full-bleed band goes in a `ThemeGrid_Container`
 
 ```
