@@ -118,8 +118,16 @@ Record on the item: `risk_tier`, `det_gate: pass`, `visual: pass`, `measurements
 and `decision_log` (maker + checker). Status `built`.
 
 Write the handover document (`handover/<artifact>.md`) with the DECISION-LOG in a collapsed
-`<details>` ("Why / alternatives ruled out"), and run `node build/embed-handover-code.mjs` so
-it carries the verbatim code to paste into ODC. Update the Style Guide page.
+`<details>` ("Why / alternatives ruled out") and the design-variant → framework-class mapping
+table, and run `node build/embed-handover-code.mjs` so it carries the verbatim code to paste into
+ODC. Update the Style Guide page.
+
+**The reasoning goes into the PR and the handover — never into the artifact.** The maker's
+decision log, the scope it deferred, the framework selectors it surveyed and the ratios it
+computed all have destinations below and in `comment-budget.md`; a copy of any of them in a file
+header is a second original that nobody reviews and nothing keeps current. A ref-vs-drawing
+disagreement goes back into `loop/refs/<id>/spec.md` under `## Ref discrepancies`, where the next
+snapshot can settle it.
 
 Commit on `ITEM.branch` using an `outsystems-git-helpers` message.
 

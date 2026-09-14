@@ -95,36 +95,33 @@ the framework has no name for it, so there is nothing to override.
 ## Output format
 
 ```css
-/* ============================================
-   Theme: [Customer / Project from memory]
-   Generated: [date]
-   Source: [Figma URL or "manual input"]
-   Accessibility: WCAG 2.2 AA (color contrast verified)
-   ============================================ */
+/* @section Foundations / Colors */
+/* Colors for [Customer / Project]. Source: [Figma file key + node, pulled <date>]. */
 
 :root {
-  /* ----- Colors: Brand ----- */
-  --color-primary: #1A73E8;        /* WCAG AA on white: 5.3:1 ✓ */
-  --color-primary-hover: #1557B0;  /* WCAG AA on white: 8.4:1 ✓ */
+  /* Brand */
+  --color-primary: #1A73E8;
+  --color-primary-hover: #1557B0;
 
-  /* ----- Colors: Neutral ----- */
+  /* Neutral */
   --color-neutral-0:  #FFFFFF;
   /* ... etc ... */
 
-  /* ----- Colors: Semantic ----- */
+  /* Semantic */
   --color-success: #16A34A;
-  --color-error:   #DC2626;        /* WCAG AA on white: 5.9:1 ✓ */
+  --color-error:   #DC2626;
   --color-warning: #F59E0B;
-  --color-info:    #0EA5E9;
-
-  /* ----- Typography ----- */
-  --font-family-body: 'Inter', system-ui, sans-serif;
-
-  /* ----- Spacing ----- */
-  --space-base: 8px;
-  /* ... */
+  --color-info:    #0EA5E9;   /* #31 filed: 2.9:1 on white, built as drawn */
 }
 ```
+
+**One comment per group, and a ratio only where a pairing FAILS and the finding is filed.**
+Passing ratios are computed and reported — in the PR's Gates section and the a11y verification
+below — not annotated beside every token. A `/* 5.3:1 ✓ */` on a line nobody reads is a measurement
+in the wrong place, and it silently goes stale the day the value changes. The one ratio worth
+keeping in the file is a failing one with its issue number, because it is what stops the next
+maker from "fixing" a value the brand owner already ruled on. Full rule:
+`skills/design-loop/references/comment-budget.md`.
 
 After block, provide:
 1. **Where to paste:** Theme module (O11) / Theme Library (ODC)
@@ -134,10 +131,10 @@ After block, provide:
 
 ## A11y verification (always do this)
 
-For every color paired with a text or border context, calculate contrast and annotate:
-- Pass AA: `/* 5.3:1 ✓ */`
-- Pass AA Large only: `/* 3.2:1 ✓ (large text only) */`
-- Fail: `/* ⚠️ 2.1:1 — FAILS WCAG AA, suggest darkening */`
+For every color paired with a text or border context, calculate contrast and **report the table**
+— in your reply, and in the PR's Gates section when the loop is driving. In the CSS itself, only a
+failing pair leaves a mark, and only once its finding exists:
+`/* #31 filed: 2.1:1 on white, built as drawn */`.
 
 If a token fails contrast for its expected use case, **emit the token as designed** and raise an
 `accessibility/contrast` finding through `outsystems-design-findings`. The darker alternative goes

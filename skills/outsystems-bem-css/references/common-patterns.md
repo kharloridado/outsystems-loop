@@ -26,8 +26,9 @@ environment actually runs before you ship** — and anchor on the rendered DOM
 `.btn` and each modifier are single-class selectors — your override sits at the same
 specificity and wins on source order, because the theme loads after the framework.
 
-**Step 1 — map the design's variants onto the framework's classes.** Put this table in the
-file header; it is the handover instruction as much as it is documentation.
+**Step 1 — map the design's variants onto the framework's classes.** This table is a handover
+instruction, so it goes in `handover/<artifact>.md` and the decision log — not in the CSS file
+header, where the developer who needs it never looks.
 
 | Framework class | Widget property | Design variant |
 | --- | --- | --- |
@@ -69,9 +70,7 @@ cascade, so it silently wins and the small button stops being small. Exclude wha
 has no answer for, rather than inventing one:
 
 ```css
-/* The design publishes one standard height and one big height. It says nothing about a
- * small button, so `.btn-small` keeps the framework's own box — an explicit decision,
- * recorded, not an accident. */
+/* .btn-small excluded: the design draws no small button — it keeps the framework's box. */
 .btn:not(.btn-small) {
   height: var(--acme-button-height);
   padding: var(--acme-button-padding-block) var(--acme-button-padding-inline);
