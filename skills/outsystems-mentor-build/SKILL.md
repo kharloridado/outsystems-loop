@@ -258,15 +258,39 @@ inner `ThemeGrid_Container` per rule 3. Then the two mechanisms never compete. B
 probe that renders a genuinely empty placeholder and measures `display: none` — an argument in
 a comment is not a guard, and this exact bug survived a clean validation and a green publish.
 
-### 3. Content inside a full-bleed band goes in a `ThemeGrid_Container`
+### 3. The content row takes framework classes — `ThemeGrid_Container display-flex align-items-center`
 
 ```
-<div class="my-property-bar placeholder-empty">   <- the band: background, borders, shadow
-  <div class="ThemeGrid_Container">               <- the content: centring + gutters
+<div class="my-property-bar placeholder-empty">              <- band: background, borders, shadow
+  <div class="ThemeGrid_Container display-flex align-items-center">   <- row: ALL framework classes
     …
   </div>
 </div>
 ```
+
+**Read the layout's own equivalent region before you write a line of CSS, and copy how it is
+built.** That is the whole rule, and it is cheap: ask the model for the literal Style Classes
+on the existing rows. In a stock ODC `LayoutTopMenu` you will find
+
+| Element | Style Classes, verbatim from the module |
+| --- | --- |
+| the 56px top row | `header-top ThemeGrid_Container` |
+| its inner row | `header-content display-flex ` |
+| the Title + Actions row | `content-top display-flex align-items-center` |
+
+Every one of those expresses the flex row as **classes on the widget**, not as declarations in
+a stylesheet. A new region that writes `display: flex; align-items: center` into the design
+system's CSS is re-implementing `.display-flex` and `.align-items-center` — utilities the
+framework already ships (`05-useful/_display-flex.scss`). Your stylesheet should carry only
+what has no utility equivalent: the design's own `gap`, `padding-block`, colours and borders.
+
+**`ThemeGrid_Container` is the one a new sibling does not inherit.** It is what applies the
+grid's max-width and the horizontal gutters, and the top row carries it *explicitly* — so a
+band added beside that row gets none of it and renders full-bleed with its content flush to
+the viewport edge. Add it, or add a wrapper inside the band that has it.
+
+Note also that `display-flex` on the inner row is scoped to **that row's** children. It does
+nothing for a sibling at the outer level; each region declares its own.
 
 This mirrors how the framework builds the header one level up (`.header` is the band,
 `.header-top.ThemeGrid_Container` is the content), and it is what gives the region the app's
