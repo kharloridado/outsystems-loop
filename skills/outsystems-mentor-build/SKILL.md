@@ -1,6 +1,6 @@
 ---
 name: outsystems-mentor-build
-description: Drive a build inside a real ODC module through Mentor over the OutSystems MCP — screens, layouts, widget trees, theme CSS — and verify it actually landed. Use this skill whenever work is being applied to a live OutSystems app rather than emitted as files: creating or editing a screen, assembling a widget tree, pasting a theme, or sequencing and publishing Mentor turns. Also use it whenever a Mentor turn reports success and you are about to believe it.
+description: Drive a build inside a real ODC module through Mentor over the OutSystems MCP — screens, layouts, widget trees, theme CSS — and verify it actually landed. Use this skill whenever work is being applied to a live OutSystems app rather than emitted as files: creating or editing a screen, assembling a widget tree, adding a placeholder or an optional region to a Layout, pasting a theme, or sequencing and publishing Mentor turns. Also use it whenever a Mentor turn reports success and you are about to believe it.
 ---
 
 # Driving an ODC build through Mentor
@@ -180,6 +180,104 @@ A base-only check passes a page whose variants are scrambled.
 `:is(.btn, [class*="ds-btn--"])` makes a modifier self-sufficient if someone does drop the
 base, and keeps specificity at 0,1,0. Worth doing — but it repairs the stylesheet, not the
 widget, and the widget is still wrong. Fix both.
+
+## Extending a Layout — three rules for a new region
+
+Adding a band to a Layout (a context bar under the top menu, a sub-header, a toolbar) is the
+most common structural change after adding a screen. Three rules, each with a failure mode
+that ships silently.
+
+### 1. The class goes ON the placeholder, not on a wrapper the screen supplies
+
+    Placeholder "PropertyBar"   Style Classes: my-property-bar placeholder-empty
+
+not
+
+    Placeholder "PropertyBar"   (bare)
+    └─ Container                Style Classes: my-property-bar     <- the screen's
+
+Both render the same DOM the first time. They diverge on every screen after that.
+
+When the layout owns the class, the region has **one** definition and a screen cannot spell
+it differently, forget it, or wrap it in something else. When the screen owns it, the
+region's contract is distributed across every screen that uses it, and the layout block —
+the thing whose name implies it defines the layout — defines nothing.
+
+The tell that you got it wrong: the styling instructions in your handover have to explain
+what container to create. If a screen author needs to know a class name to make a layout
+region look right, the class is in the wrong place.
+
+### 2. An optional placeholder MUST carry `placeholder-empty`
+
+    Style Classes: my-property-bar placeholder-empty
+
+**An empty placeholder still emits its element.** This is the misconception worth killing,
+because it is load-bearing and it reads as plausible: people reason that a placeholder is
+"replaced by" its content, so nothing means no element. It does not work that way. The
+framework ships
+
+```scss
+.placeholder-empty:empty { display: none; }
+```
+
+and that rule would have no reason to exist if empty placeholders produced no DOM.
+
+So a region whose band styling lives on the placeholder — per rule 1 — renders that styling
+on **every screen that leaves it empty**: a bare, content-free strip of background, borders
+and padding. `placeholder-empty` is what makes the region genuinely optional rather than
+merely blank.
+
+**The source path lies about its scope — check the compiled CSS, not the tree.** The rule
+lives in `src/scss/08-servicestudio-preview/_placeholder-empty-odc.scss`, a directory whose
+name says editor-preview-only. The ODC variant ships **unguarded at runtime**. Its O11
+sibling in the same folder, `_placeholder-empty-o11.scss`, *is* wrapped in
+`html[data-uieditorversion^="1"]`. Two near-identical files, one guarded and one not, in a
+folder named for the guarded case. Grep the built stylesheet and read the selector that
+actually shipped.
+
+`:empty` is strict — it matches only when the element has no child nodes at all. That is what
+you want here, and it means you must not "helpfully" put a comment or a spacer inside the
+placeholder.
+
+### 3. Content inside a full-bleed band goes in a `ThemeGrid_Container`
+
+```
+<div class="my-property-bar placeholder-empty">   <- the band: background, borders, shadow
+  <div class="ThemeGrid_Container">               <- the content: centring + gutters
+    …
+  </div>
+</div>
+```
+
+This mirrors how the framework builds the header one level up (`.header` is the band,
+`.header-top.ThemeGrid_Container` is the content), and it is what gives the region the app's
+own responsive gutters instead of a hand-rolled set. Splitting band from content is also
+what lets the band be full-bleed while its content stays aligned with everything else on the
+page.
+
+**The gutter collision, and why it is not obvious.** Inside a header, the framework sets
+
+```css
+.header .ThemeGrid_Container { padding: var(--space-none) var(--space-xl); }
+```
+
+Two traps in that one line:
+
+- **It is the `padding` shorthand**, so it resets `padding-block` to `0`. A band that needs
+  vertical padding must set `padding-block` explicitly, and must win the cascade to do it.
+  The responsive variants (`.tablet .header .ThemeGrid_Container`, `.phone …`) use the
+  shorthand too, at (0,3,0) — the same specificity a naive override lands on, so it resolves
+  on source order. **Measure the computed value at every device class; do not reason it out.**
+- **The design may not want the framework's gutter.** A design that binds the band to one
+  spacing token and the row above it to another is differentiating them deliberately, and
+  adopting `ThemeGrid_Container` wholesale silently discards that. Adopt the container for
+  its centring and its responsive behaviour, then scope the horizontal padding back to the
+  designed value using the framework's own device class (`.desktop …`), letting tablet and
+  phone inherit. That is not an invented breakpoint — it is the platform's device
+  classification — so it stays legitimate even when the design ref has no mobile frame.
+
+If you cannot have both, say so and let a human choose. Quietly taking the framework's
+number is changing a design value without telling anyone.
 
 ## Sequencing turns
 
