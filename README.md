@@ -111,9 +111,9 @@ actually looking.
 **And it goes there instead of into the code.** The artifact says WHAT; the PR says WHY. The
 maker once wrote its decision log, its deferral rationale and its framework-selector survey into
 the CSS file header — prose the reviewer already had in the PR, the developer scrolled past while
-pasting into ODC, and `build:theme:ship` stripped from the customer's copy. The budget is a 4-line
-header, one-line section markers and inline notes only where the code cannot speak for itself; the
-checker fails an artifact that carries rationale, and
+pasting into ODC, and `build:theme:ship` stripped from the customer's copy. The test is simple: delete the
+declaration and read the comment — if it still makes sense on its own, it is PR prose in the wrong
+file. The checker fails an artifact that carries rationale, and
 `skills/design-loop/references/comment-budget.md` says where each kind of prose goes instead.
 
 The loop **never merges and never approves**. It stops at an open PR, and the handover Task is

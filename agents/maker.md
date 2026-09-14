@@ -48,8 +48,9 @@ Take ONE work item (named in the prompt, referenced in `loop/state.json`) and pr
 - BEM `block__element--modifier` with the project's `classPrefix`; no hard-coded values; `ExtendedClass` for OutSystems UI customizations; vanilla JS Web Components for L5 (registration guard, composed events, `:host` token fallback chain, cleanup).
 - **Comment budget — the code says WHAT, the PR says WHY.** Read
   `skills/design-loop/references/comment-budget.md` before you write a file header. In short: a
-  4-line header, one-line section markers, and inline notes only where the code cannot speak for
-  itself. Your decision log, the alternatives you ruled out, the scope you deferred, the framework
+  short header, one-line section markers, and per-rule notes only as long as the declaration they
+  justify needs — the test is that a comment which still makes sense with its declaration deleted
+  is PR prose in the wrong file. Your decision log, the alternatives you ruled out, the scope you deferred, the framework
   selectors you surveyed and the contrast ratios you computed go in the **DECISION-LOG and the
   findings** — the orchestrator puts them verbatim into the PR body, which is where the human
   reviews. A rationale essay in a file header is not thoroughness: it is a PR body pasted into the

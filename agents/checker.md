@@ -160,10 +160,13 @@ State which depth you applied. **When unsure, round UP.**
      inventory, a ref-vs-drawing discrepancy list, an `OBSERVATION:` about a conflict that was
      never filed, or passing contrast ratios annotated token by token — any of those **in the
      file** is a **FAIL**, and the fix is to move it, not delete it (the table in that reference
-     says where each goes). Budget: a 4-line header, one-line section markers, no ASCII banners,
-     inline notes only where the code cannot speak for itself; comments under ~10% of the file's
-     lines and none over 3 lines. Two carve-outs that are never findings: a Web Component's
-     header API contract, and the theme build's own generated TOC and section banners.
+     says where each goes). **Apply that reference's test, not a line count:** delete the
+     declaration and read the comment — if it still makes sense on its own, it is PR prose in the
+     wrong file. Budget: a 4-line header on a token file, up to 8 on a component, one-line section
+     markers, no ASCII banners, and per-rule notes only as long as the declaration they justify
+     needs. **Do not flag a comment for its length alone** — a 15-line note on a load-bearing
+     hand-back is correct, and a 2-line decision log is not. Two carve-outs that are never
+     findings: a Web Component's header API contract, and the theme build's generated TOC.
      This is a real defect, not a style preference — the prose is *also* in the PR body, so the
      copy in the artifact is a second, unreviewed, already-stale original in the one file a
      developer has to paste into ODC.

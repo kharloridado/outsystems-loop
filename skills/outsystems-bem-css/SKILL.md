@@ -168,8 +168,8 @@ Two shapes, and rule zero decides which:
 }
 ```
 
-**Keep it that thin.** Four lines of header, one-line section markers, and inline notes only
-where the code cannot speak for itself — the full rule, and where the prose you are not writing
+**Keep the header that thin.** Four to eight lines, one-line section markers, and per-rule notes
+only as long as the declaration they justify needs — the full rule, and where the prose you are not writing
 here goes instead, is `skills/design-loop/references/comment-budget.md`. The escalation level,
 the tokens consumed, the alternatives you ruled out and the framework selectors you surveyed all
 belong in the PR body and the handover, which is where they get read.

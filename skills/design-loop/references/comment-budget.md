@@ -38,21 +38,36 @@ actually find.
 
 ## The budget
 
-Per file:
+- **Header** — **4 lines on a token file, up to 8 on a component**: what the file is, its spec
+  ref, the framework baseline it was written against, which findings are filed against it, and a
+  pointer to the handover for the tables and contracts. Plus the `/* @section Group / Name */`
+  line where the theme build needs one.
+- **Section markers: one line, no ASCII art** — `/* Sizes */`. No box-drawing characters, no
+  rules of `═` or `─`, no centred banners.
+- **Per-rule notes: as long as they need to be to justify a declaration in this file, and no
+  longer.** Most are one line. The ones that earn more are the ones where deleting the
+  declaration would break something silently — a specificity hand-back, a load-bearing
+  `display`, a `:not()` that excludes a framework sibling, a value whose conflict is filed
+  (`/* #12 filed: 2.4:1, built as drawn */`). **A note past ~15 lines has stopped explaining a
+  declaration and started arguing a case; move the argument.**
 
-- **Header: 4 lines maximum** — what the file is, its spec ref path, the framework baseline it was
-  written against. Plus the `/* @section Group / Name */` line where the theme build needs one.
-- **Section markers: one line, no ASCII art** — `/* Sizes */`. No box-drawing characters, no rules
-  of `═` or `─`, no centred banners.
-- **Inline: one line each, and only where the code cannot say it itself.** The whole allowed list:
-  a non-obvious framework selector, a justified `!important`, a deliberate `:not()` exclusion of a
-  framework sibling, a `:host` fallback literal, and a value whose conflict is filed —
-  `/* #12 filed: 2.4:1, built as drawn */`.
+### The test that replaces counting lines
 
-Rough ceiling: **comments under 10% of the file's lines, and no comment over 3 lines.** If you are
-writing paragraph four, you are writing the PR body in the wrong file. If a note does not fit the
-budget, it is not too important to cut — it is too important to bury, so move it to its
-destination above.
+**Delete the CSS and read the comment. If it still makes sense on its own, it is not a code
+comment — it is PR prose in the wrong file.**
+
+A comment that says *why this declaration exists* dies with the declaration. A comment that says
+*why we chose this approach over three others*, or *what the design got wrong*, or *what the
+framework emits*, stands perfectly well on its own — which is exactly why it belongs somewhere a
+person can find it, and why nobody will ever update it where it is.
+
+Do not enforce a percentage. The first version of this file said "comments under 10% of a file's
+lines, none over 3", which was a plausible-looking number nobody had measured — the failure mode
+this project has a whole rule about. Measured: sweeping seven real block files and five token
+files took them from 5,389 lines to 1,779, and what survived is roughly 45% comment, because what
+is left is mostly one-declaration rules that each need their one line of why. The longest
+surviving note is 17 lines and it is the right length: it is the one that stops someone deleting
+a card's bottom anchor.
 
 ## Not a comment problem — leave these alone
 
