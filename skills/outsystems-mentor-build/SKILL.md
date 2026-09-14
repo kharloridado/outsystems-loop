@@ -392,6 +392,29 @@ the browser as the authority. Note that the context lookups can lag a publish by
 seconds; a screen missing from `context_screens` immediately after a successful publish is
 usually index lag, and the browser settles it.
 
+### Never verify a size or a count from the model's own report
+
+Ask Mentor to paste a stylesheet section back and it will do so faithfully — that is reading.
+Ask it how long the file is and you get a language model counting characters, which is not.
+
+On one verification pass Mentor printed section 5.7 correctly, confirmed there was exactly one
+of it, and then reported the stylesheet as **18,657 characters** when the server's own byte
+count was **30,281**. Nothing was wrong; the count was. Treated as evidence it would have read
+as an 11KB truncation and triggered a pointless re-paste — or worse, a "repair" that really did
+damage the file.
+
+So split the two kinds of question:
+
+| Question | Ask |
+| --- | --- |
+| "what does this element/section contain?" | the model — it reads the module |
+| "how many bytes / how many of X / did anything else change?" | the **context service**, which returns a server-side byte count, or a diff you compute yourself |
+
+And sanity-check any size against the artifact you generated it from: a theme pasted from a
+build should match that build's byte count within a small, *stable* delta (line endings and the
+editor's preamble). A delta that matches the one you measured before the change is strong
+evidence nothing was lost; a delta that suddenly moves is worth chasing.
+
 ### Per-widget property edits can silently no-op — check the revision number
 
 Bulk work (replacing a theme stylesheet, a screen stylesheet) applies reliably. **Per-widget
