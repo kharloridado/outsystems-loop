@@ -132,19 +132,14 @@ If anything is unclear, make a reasonable assumption and state it. Don't pause f
 Two shapes, and rule zero decides which:
 
 - **Restyling a framework widget** (the common case) — selectors are the framework's own bare
-  class names. Head the file with the mapping table and deliver "set the widget's Style property
-  to X", not an `ExtendedClass` string. See `references/common-patterns.md`.
+  class names. Deliver the mapping table and "set the widget's Style property to X" in the
+  handover, not an `ExtendedClass` string and not as a comment block in the CSS. See
+  `references/common-patterns.md`.
 - **Building something the framework has no name for** — full BEM under the project prefix,
   applied via `ExtendedClass`. That is the shape below.
 
 ```css
-/* ============================================
-   Component: [Name]
-   Pattern: [OS UI Pattern this extends, or "Custom Block"]
-   Location: [Theme CSS / Block CSS / Screen CSS]
-   Escalation Level: L1 / L2 / L3 / L4
-   Tokens consumed: [list]
-   ============================================ */
+/* acme-card — custom Block CSS. Spec: loop/refs/cmp-card/. OSUI baseline v2.30.0. */
 
 /* Block */
 .acme-card { /* ... */ }
@@ -172,6 +167,12 @@ Two shapes, and rule zero decides which:
   .acme-card { /* tablet+ */ }
 }
 ```
+
+**Keep it that thin.** Four lines of header, one-line section markers, and inline notes only
+where the code cannot speak for itself — the full rule, and where the prose you are not writing
+here goes instead, is `skills/design-loop/references/comment-budget.md`. The escalation level,
+the tokens consumed, the alternatives you ruled out and the framework selectors you surveyed all
+belong in the PR body and the handover, which is where they get read.
 
 Then provide:
 1. **How the developer applies it.** For a framework restyle, the widget property that emits the

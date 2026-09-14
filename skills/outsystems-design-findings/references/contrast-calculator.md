@@ -49,20 +49,29 @@ When generating `:root` blocks, validate these pairs by default. (Values assume 
 | `--color-primary` border | `--color-neutral-0` | 3:1 | Focus ring |
 | Icon `--color-neutral-7` | `--color-neutral-0` | 3:1 | Toolbar icons |
 
-## Generating CSS with contrast comments
+## Where the computed ratios go
 
-When generating tokens, include a comment showing the contrast ratio:
+Report the whole table — in your reply, and in the PR's Gates section when the loop is driving.
+**Do not annotate the ratio beside every token.** A passing ratio in a comment is a measurement
+filed where nobody reviews it and nothing keeps it current; the value changes and the comment
+lies. (`skills/design-loop/references/comment-budget.md`.)
+
+| Token | Against | Ratio | Verdict |
+|---|---|---|---|
+| `--color-neutral-9` #0F172A | `--color-neutral-0` | 17.85:1 | AA + AAA |
+| `--color-neutral-7` #475569 | `--color-neutral-0` | 7.93:1 | AA + AAA |
+| `--color-neutral-6` #64748B | `--color-neutral-0` | 5.16:1 | AA |
+| `--color-neutral-5` #94A3B8 | `--color-neutral-0` | 3.21:1 | fails AA for body text → finding |
+| `--color-primary` #1A73E8 | `--color-neutral-0` | 4.78:1 | AA |
+
+The one ratio that earns a place in the CSS is a **failing** pair, once its finding is filed:
 
 ```css
-:root {
-  /* Validated pairs (against --color-neutral-0): */
-  --color-neutral-9: #0F172A;  /* 17.85:1 — passes AA & AAA */
-  --color-neutral-7: #475569;  /* 7.93:1  — passes AA & AAA */
-  --color-neutral-6: #64748B;  /* 5.16:1  — passes AA, fails AAA */
-  --color-neutral-5: #94A3B8;  /* 3.21:1  — fails AA for body text */
-  --color-primary:   #1A73E8;  /* 4.78:1  — passes AA */
-}
+  --color-neutral-5: #94A3B8;  /* #31 filed: 3.21:1 on white, built as drawn */
 ```
+
+It is there to stop the next maker silently re-shading a value the brand owner already ruled on
+— not to document the palette.
 
 ## Flagging contrast failures
 

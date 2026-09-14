@@ -137,7 +137,7 @@ State which depth you applied. **When unsure, round UP.**
    - **Mode-bound variables:** if the ref shows one variable name resolving to different literals per size/device, the artifact must emit **per-size / per-device tokens**. A single frozen value shared across sizes is a FAIL.
    - **Ref staleness:** if the item's ref records a Figma *file key* different from the current library key in `loop/goal.md`, the ref is stale → **BLOCKED / needs-re-ref**. Design libraries get forked and re-versioned; a ref frozen against the old file is no longer the spec.
 2. **Tokens** — every value is a `var(--token)`; no hard-coded colors/sizes. The only allowed literals are documented fallbacks inside a Web Component `:host` chain.
-3. **BEM + naming** — the project's `classPrefix`, `block__element--modifier`, no state coupling (`.x.is-open`), no data-attribute styling, no platform-generated IDs, no unjustified `!important`.
+3. **BEM, naming and comment budget** — the project's `classPrefix`, `block__element--modifier`, no state coupling (`.x.is-open`), no data-attribute styling, no platform-generated IDs, no unjustified `!important`.
    - **Restyle-native check (run it selector by selector, not impressionistically).** For every
      `<classPrefix>-` class the maker introduced, grep `vendor/outsystems-ui/` for the widget and
      its variants, then judge:
@@ -155,6 +155,18 @@ State which depth you applied. **When unsure, round UP.**
        A `.btn { height }` override at equal specificity, loaded later, silently overrides
        `.btn-small { height }` — **measure a sibling, don't reason about it.** An unmentioned,
        unmeasured sibling is a FAIL.
+   - **Comment-budget check** (`skills/design-loop/references/comment-budget.md`). The artifact
+     carries no rationale: a decision log, a "why I deferred X" argument, a framework-selector
+     inventory, a ref-vs-drawing discrepancy list, an `OBSERVATION:` about a conflict that was
+     never filed, or passing contrast ratios annotated token by token — any of those **in the
+     file** is a **FAIL**, and the fix is to move it, not delete it (the table in that reference
+     says where each goes). Budget: a 4-line header, one-line section markers, no ASCII banners,
+     inline notes only where the code cannot speak for itself; comments under ~10% of the file's
+     lines and none over 3 lines. Two carve-outs that are never findings: a Web Component's
+     header API contract, and the theme build's own generated TOC and section banners.
+     This is a real defect, not a style preference — the prose is *also* in the PR body, so the
+     copy in the artifact is a second, unreviewed, already-stale original in the one file a
+     developer has to paste into ODC.
 4. **Accessibility** — contrast computed for every text/UI pair. Implementation-level items applied (focus/ARIA/keyboard/reduced-motion/targets). Design-level conflicts FLAGGED as findings, **NOT** silently fixed.
    - The rules are **not defined here.** Widget-level accessibility is
      `vendor/outsystems-frontend-skills/common/accessibility.md` (WCAG 2.1 AA); the seven criteria

@@ -31,8 +31,9 @@ Take ONE work item (named in the prompt, referenced in `loop/state.json`) and pr
     bare class is what makes the brand the default instead of an opt-in.
   - The framework has the variant class → restyle **that**: `.btn-primary`, `.btn-success`,
     `.btn-error`, `.btn-large`, `.btn-small`, `.btn-cancel`. Map the design's variants onto the
-    framework's, and write the mapping table into the file header and the DECISION-LOG — the
-    developer sets the widget's own Style property, not an `ExtendedClass` string.
+    framework's, and put the mapping table in the DECISION-LOG and in `handover/<artifact>.md`
+    — **not in the file header** — because the reader who needs it is the developer setting the
+    widget's own Style property, not an `ExtendedClass` string.
   - The framework has the token → **redefine it** (`--color-primary`, `--space-m`). A name
     collision with OutSystems UI is the re-branding MECHANISM, not a defect, and never a finding.
   - The framework has **no** equivalent → *now* a `<classPrefix>-<block>--<variant>` class is
@@ -45,6 +46,15 @@ Take ONE work item (named in the prompt, referenced in `loop/state.json`) and pr
   A sibling you did not mention is a sibling you broke. If the design has no counterpart for one,
   say so in the DECISION-LOG rather than inventing a size or a colour nobody drew.
 - BEM `block__element--modifier` with the project's `classPrefix`; no hard-coded values; `ExtendedClass` for OutSystems UI customizations; vanilla JS Web Components for L5 (registration guard, composed events, `:host` token fallback chain, cleanup).
+- **Comment budget — the code says WHAT, the PR says WHY.** Read
+  `skills/design-loop/references/comment-budget.md` before you write a file header. In short: a
+  4-line header, one-line section markers, and inline notes only where the code cannot speak for
+  itself. Your decision log, the alternatives you ruled out, the scope you deferred, the framework
+  selectors you surveyed and the contrast ratios you computed go in the **DECISION-LOG and the
+  findings** — the orchestrator puts them verbatim into the PR body, which is where the human
+  reviews. A rationale essay in a file header is not thoroughness: it is a PR body pasted into the
+  artifact a developer has to paste into ODC, where nobody reads it and `build:theme:ship` strips
+  it anyway.
 
 ## Host-platform rules (ODC) — each of these has already cost a project real rework
 - **Boolean attributes must be value-aware.** The host binds attributes with a forced value (`If(Flag,"true","false")`), so `hasAttribute('x')` is permanently true and the off-state never fires. Parse the *value*.

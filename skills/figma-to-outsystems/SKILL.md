@@ -199,7 +199,7 @@ After Phase 1 audit, proceed without further questions:
 - Default to brevity for conversational; full deliverables when generating code
 - State which phase + escalation level when relevant
 - Use stored conventions silently
-- Include accessibility comments inline (contrast ratios, ARIA notes); when a ratio fails, note the finding ID rather than changing the value
+- Report contrast ratios and ARIA notes in the reply and the PR, not as comments through the code; a **failing** pair earns one inline note carrying its finding ID, and the value still ships as drawn (`skills/design-loop/references/comment-budget.md`)
 - Offer Git artifacts proactively after significant generations
 - Surface the Findings Register after any audit, and report routing results (or what to connect)
 

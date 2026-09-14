@@ -56,6 +56,12 @@ For every Web Component request, produce three deliverables. **Do not generate a
 
 Vanilla JS using the standard Custom Elements + Shadow DOM API.
 
+The header block below is the element's **public contract** — attributes, properties, events,
+slots, one line each — and it is the one header the comment budget keeps in full, because a
+developer reads it in ODC where there is no PR to read. It is not a place for rationale: why you
+chose this approach, what you ruled out and what you deferred go in the DECISION-LOG and the PR
+(`skills/design-loop/references/comment-budget.md`).
+
 **Template structure:**
 ```javascript
 /**

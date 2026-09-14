@@ -23,8 +23,9 @@ flag designed targets under 24px, drag-only interactions with no alternative, an
 never draws a focus treatment for. All of it goes into the audit's findings register.
 
 ### Phase 2 — `outsystems-token-extractor`
-Compute contrast for every pair the palette implies, annotate the measured ratio in a comment beside
-each token, and **emit the token as designed**. A failing pair is an `accessibility/contrast`
+Compute contrast for every pair the palette implies, report the ratios as a table (the PR's Gates
+section, not a comment beside each token — `skills/design-loop/references/comment-budget.md`), and
+**emit the token as designed**. A failing pair is an `accessibility/contrast`
 finding; the suggested shade goes in the finding, never into `:root`.
 
 ### Phase 3, L1–L4.5 — `outsystems-bem-css`
