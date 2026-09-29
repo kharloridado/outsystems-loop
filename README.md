@@ -9,7 +9,7 @@ frontend-skills pack, vendored as a pinned submodule and read at runtime. This r
 process, the policy and the judgement. See [ARCHITECTURE.md](ARCHITECTURE.md) — that separation is
 load-bearing, not tidiness.
 
-The **project-shaped** half (tokens, build pipeline, preview harness, findings register, handover
+The **project-shaped** half (`specs/`, tokens, build pipeline, fidelity gate and review pages, findings register, handover
 bodies, GitHub scaffolding) lives in the companion scaffold,
 [`outsystems-project-template`](https://github.com/kharloridado/outsystems-project-template).
 
@@ -35,6 +35,26 @@ project at once.
 `--scope project` checks the dependency into the repo so the whole team (and unattended loop runs)
 get the same version.
 
+### 3.0 — the specs layout and review Artifacts
+
+3.0 expects the project layout from
+[Expose your design system to LLMs](https://hvpandya.com/llm-design-systems), as shipped in
+`outsystems-project-template`:
+
+- Items live under `specs/<kind>/<id>/` (frozen `ref.md`, `variables.json`, `figma.png`,
+  `specimen.html`, `probes.json`, `measurements.json`), with an 8-section usage spec at
+  `specs/<kind>/<id>.md`. The id prefix picks the kind: `cmp-` components, `pat-` patterns, `tok-` tokens.
+- There is no preview page. The maker writes a specimen, the gate builds and measures the page
+  around it, and every build ends in a review Artifact (`npm run review -- <id>`) whose link goes in
+  the PR and the handover.
+- `npm run build:theme` includes the token audit; the checker's deterministic gate requires zero
+  errors.
+- Widget structure comes from `vendor/outsystems-frontend-skills`; rulings and signed-off
+  exceptions from `specs/decisions.md`.
+
+A project still on `loop/refs/` and `preview/index.html` should stay on 2.6.0 until it adopts the
+template's layout.
+
 ## What's in it
 
 **Agents**
@@ -50,7 +70,7 @@ get the same version.
 | `/outsystems-loop:design-loop` | The orchestrator: freeze ref → maker → checker → commit → **one PR per deliverable** → findings → report. Queue is the signed inventory. |
 | `/outsystems-loop:revalidate` | Re-run the checker against an **already-built** artifact, item or PR — no maker, no rebuild. For review questions, hand-edits, or a verdict you distrust. |
 | `/outsystems-loop:board-ship` | Board *view*, local surface: `Approved` → PR → squash-merge to `main` → handover Task → `Handover`. |
-| `/outsystems-loop:board-sync` | Board *view*, local surface: reconcile board/git/state, reclaim stale claims, regenerate `deliverables.md`. |
+| `/outsystems-loop:board-sync` | Board *view*, local surface: reconcile board/git/state, reclaim stale claims, republish the library review page. |
 | `figma-to-outsystems` | Master workflow orchestrator. |
 | `outsystems-component-audit` | Triage a design: exists as-is / customize / build custom (L1–L5). |
 | `outsystems-token-extractor` | Figma variables → `:root` custom properties. |
@@ -173,8 +193,8 @@ deleted and must be edited with `updateProjectV2Field` instead.
 
 ## The rendered-fidelity gate
 
-The checker does not review fidelity by reading CSS. It serves the consuming project's preview
-harness (`npm run preview`), measures the **computed** style of every value the frozen ref states,
+The checker does not review fidelity by reading CSS. It builds the item's specimen page from
+`specs/<kind>/<id>/specimen.html`, measures the **computed** style of every value the frozen ref states,
 and returns a MEASUREMENTS table plus `VISUAL: pass | drift | unverified`. Drift or unverified
 forbids a PASS.
 
@@ -245,14 +265,16 @@ regression too. The highest-value catch, a webfont silently falling back to a sy
 
 Three consequences for the consuming project:
 
-- It must expose `npm run preview` and `<link>` every block stylesheet in the harness, in layer
-  order. CSS that isn't loaded means the preview proved nothing.
+- It keeps each item under `specs/<kind>/<id>/` (frozen `ref.md`, `specimen.html`, `probes.json`,
+  `measurements.json`) with a usage spec beside it, lists every block file in `src/blocks/index.css`,
+  and exposes `npm run gate:measure`, `gate:regression` and `review`. The specimen page loads the
+  framework base, `dist/theme.css` and every block file from that manifest, so nothing is hand-linked.
 - It needs a browser: `playwright-core` plus an installed Chrome or Edge (no download), or the full
   `playwright` package with bundled Chromium.
 - **A failed stylesheet or font request invalidates the whole viewport.** A missing CSS file does
   not throw — the cascade falls back and every computed value still reads as a plausible number
-  describing a page nobody will ever see. The commonest cause is `vendor/outsystems-ui/` never
-  being built, and it is why `git submodule update --init` is not optional.
+  describing a page nobody will ever see. The commonest cause is the framework base
+  (`review/vendor/outsystems-ui/`) never being built, and it is why `git submodule update --init` is not optional.
 
 ## Local development
 

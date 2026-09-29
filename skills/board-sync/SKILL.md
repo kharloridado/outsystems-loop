@@ -1,9 +1,9 @@
 ---
 name: board-sync
-description: Reconcile the GitHub Project board against git and loop/state.json, reclaim cards stranded In Progress by a crashed run, and regenerate the deliverables.md snapshot. Use this when the board and the repo look out of step, when a run died mid-item, when a card has been stuck In Progress, or on a daily cadence. Read-mostly and needs no Figma. Runs at the keyboard or on a local schedule; the board is unreachable from a cloud routine.
+description: Reconcile the GitHub Project board against git and loop/state.json, reclaim cards stranded In Progress by a crashed run, and republish the library review page. Use this when the board and the repo look out of step, when a run died mid-item, when a card has been stuck In Progress, or on a daily cadence. Read-mostly and needs no Figma. Runs at the keyboard or on a local schedule; the board is unreachable from a cloud routine.
 ---
 
-# board-sync — reconcile, reclaim, snapshot
+# board-sync — reconcile, reclaim, republish
 
 The janitor of the board loop. It owns the three jobs that belong to neither `board-advance`
 nor `board-ship`, and it exists mostly so that **stale-lock reclaim lives somewhere safe**: if
@@ -19,7 +19,7 @@ from a cloud routine. Local does not mean by hand; see *Running on a schedule* b
 
 | Invocation | Does |
 |---|---|
-| (default) | Reconcile + regenerate `deliverables.md`. Reports drift; **moves no cards.** |
+| (default) | Reconcile + republish the library review page. Reports drift; **moves no cards.** |
 | `--reclaim-stale` | Additionally rescues cards stranded in `In Progress`. The only mode that moves a card. |
 | `--dry-run` | Reads and reports only. No `item-edit`, `issue comment`, `git push`, graphql mutation or `state.json` write. Print suppressed commands under `## Would execute`. |
 
@@ -70,19 +70,17 @@ That third case is neither rare nor theoretical: the lane move is the last thing
 Post one comment per reclaim saying which case it was. A card that changes lane with no
 explanation is worse than one that stayed stuck.
 
-## 3. Regenerate `deliverables.md`
+## 3. Republish the library review page
 
-`WORKFLOW.md` has always claimed a root `deliverables.md` mirroring the board. It was never
-written by hand and never will be — generate it.
+The showable map of every deliverable is the library review page, not a hand-kept file. After
+reconciling, run `npm run review` and publish `review/index.html` with the Artifact tool to
+`library_review_url` in `loop/state.json` (publish once and record the URL if there is none). It
+lists every item with its status — which the reconcile above just made true — its fidelity against
+the judged baseline, its findings, and the code to paste, and each republish adds a version, so
+scope and progress can be compared week to week.
 
-One row per card: component, lane, tier, level, issue, PR, Figma node, date entered `Ready`,
-date merged. Sort by tier then component. Give it a generated-file header (`docs/LESSONS.md`
-§4.1 — generated files must look generated) naming this skill and the board URL, and commit it.
-
-It earns its place three times over: it is the human-readable map `WORKFLOW.md` promises, a
-diffable in-repo record of what was accepted into scope and when, and — for a project whose
-`Inventory source` is `board` — the client-showable artifact that stands in for a signed
-inventory table. Someone with authority over scope can counter-sign it weekly.
+No Artifact tool in this run ⇒ skip the publish and say so; `review/` is gitignored and nothing is
+committed.
 
 ## Running on a schedule
 
@@ -114,7 +112,7 @@ they should watch it get one right first.
 ## 4. Report
 
 Drift corrected, cards reclaimed (with which case each was), anything flagged for a human, and
-the `deliverables.md` diff. If nothing needed doing, say that plainly — a quiet run is the
+the library review link. If nothing needed doing, say that plainly — a quiet run is the
 expected outcome and should read as one.
 
 $ARGUMENTS

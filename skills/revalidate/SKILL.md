@@ -39,7 +39,7 @@ item back to `queued`, and let the loop rebuild.
 
 Accept any of: an item id (`cmp-button`), a PR number (`33`), or an artifact path
 (`src/blocks/uswds-button.css`). Resolve to the item in `loop/state.json` and its frozen ref at
-`loop/refs/<id>/`.
+`specs/<kind>/<id>/` (the id prefix picks the kind: `cmp-` components, `pat-` patterns, `tok-` tokens).
 
 For a PR number: `gh pr view <n> --json headRefName,files,body` — the item id is in the title/body
 the loop wrote, and `git switch` to its head before judging. **Judge the code that is actually on
@@ -61,18 +61,18 @@ A gate that cannot measure returns `unverified`, and `unverified` caps at FAIL �
 harness looks exactly like a broken component. Rule it out first:
 
 ```bash
-npm run build:theme          # check:config → assemble → validate:theme
+npm run build:theme          # checks → assemble → validate:theme → token audit
 git submodule status         # a leading `-` means vendor/outsystems-ui is not checked out
 ```
 
 If `vendor/outsystems-ui/` is missing, `git submodule update --init && npm run build:osui` **before**
-judging. Otherwise the preview 404s where the framework should be, the cascade silently falls back,
-and every measurement describes a page nobody will ever see.
+judging. Without the compiled base the specimen page has no framework under the theme and the gate
+refuses to measure (exit 4) — a run that measured anyway would describe a page nobody will ever see.
 
 ### 3. Delegate to the checker
 
 Hand it the item, its ref, and the artifact. It runs its own deterministic gate, authors or reuses
-`loop/refs/<id>/probes.json`, runs `measure-fidelity.mjs`, applies risk-tiered depth, and
+`specs/<kind>/<id>/probes.json`, runs `measure-fidelity.mjs`, applies risk-tiered depth, and
 adversarially challenges every finding before confirming it.
 
 It returns VERDICT, RISK-TIER, DET-GATE, VISUAL, MEASUREMENTS, CONFIDENCE, CRITIQUE,
@@ -107,7 +107,8 @@ Ask before posting. A PR comment is visible to everyone on the repo.
 
 1. **Never invoke the maker.** If the artifact needs changing, say so and stop.
 2. **Never edit source, tokens, handovers or the register** — the checker's own constraint. Only
-   the gate's scratch artifacts under `loop/refs/<id>/` may be written.
+   the gate's own artifacts (`probes.json`, `measurements.json` in `specs/<kind>/<id>/`,
+   screenshots under `review/<id>/`) may be written.
 3. **Never judge without a ref.** BLOCKED is a real, correct outcome.
 4. **Never merge, approve, or move an item to a human-owned state.** A re-check is evidence for a
    human, not a substitute for one.

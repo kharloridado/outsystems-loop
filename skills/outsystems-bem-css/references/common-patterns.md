@@ -14,8 +14,9 @@ produced a real project's Button where nothing was branded until a developer han
 
 Every selector below was verified against `vendor/outsystems-ui/src/scss/` and the pattern
 enums under `src/scripts/OSFramework/OSUI/Pattern/`. **Verify them against the version your
-environment actually runs before you ship** — and anchor on the rendered DOM
-(`outsystems-widgets-reference/`), not on the SCSS alone.
+environment actually runs before you ship** — check the pattern in
+`vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/`, and when it and the SCSS disagree,
+the published page's rendered DOM decides.
 
 ---
 

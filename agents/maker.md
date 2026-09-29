@@ -14,16 +14,26 @@ Take ONE work item (named in the prompt, referenced in `loop/state.json`) and pr
 - `conventions` — each has a **status**: `confirmed` | `assumed` | `TBD`. A convention that is not `confirmed` is **not a rule**. Do not build to it and do not raise findings against it.
 - `knownFalsePositiveClasses` — finding classes this project has already refuted. Do not re-raise them.
 
+## 1. Read the specs before you write anything
+The project's `specs/` folder is what you read before writing UI code, in the order
+`specs/README.md` gives: `specs/foundations/`, `specs/tokens/token-reference.md` (the closed set of
+values you may use), `specs/decisions.md` (rulings and signed-off exceptions — never re-raise one),
+then the item's own usage spec if it exists.
+
+An item lives at `specs/<kind>/<item-id>/`, where the id prefix picks the kind: `cmp-` →
+`components`, `pat-` → `patterns`, `tok-` → `tokens`. Its usage spec is `specs/<kind>/<item-id>.md`.
+
 ## Rules
-- **The spec of record is the frozen ref** at `loop/refs/<item-id>/` (`spec.md`, `variables.json`, `figma.png`). Read it FIRST and build to its values — do not guess from handover prose or memory. You have **no Figma MCP access**; if the ref folder is missing, STOP and report that instead of building.
+- **The spec of record is the frozen ref** at `specs/<kind>/<item-id>/` (`ref.md`, `variables.json`, `figma.png`). Read it FIRST and build to its values — do not guess from handover prose or memory. You have **no Figma MCP access**; if the ref folder is missing, STOP and report that instead of building.
 - **Mode-bound variables.** If the ref shows the same variable *name* resolving to different literals across size or device variants, that variable is **mode-bound**: emit a per-size / per-device token. Never freeze one variant's value into a single shared token — that silently breaks every other size. Check the ref for *every* size variant and device frame, not just the default instance.
 - Build EXACTLY to the design. Consume brand values from `:root` tokens.
 - **NEVER** change a brand color/value/token to satisfy accessibility. If a pairing fails WCAG 2.2 AA, append a FINDING to `loop/state.json.findings[]` (it will be filed as a bug). Do NOT re-shade.
 - Apply implementation-level a11y that does **not** alter the design: focus rings in the design's own colors, keyboard handlers, ARIA, semantic HTML, reduced-motion, target sizes where layout allows.
 - **Restyle, don't shadow — never mint a name the framework already has.** Before writing a
-  single `<classPrefix>-` class, grep the framework's own SCSS (`vendor/outsystems-ui/`) and the
-  captured real rendered HTML (`outsystems-widgets-reference/`) for the widget AND for every
-  variant of it. Then:
+  single `<classPrefix>-` class, read the pattern in the frontend-skills pack
+  (`vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/SKILL.md` routes you to it) and
+  grep the framework's own SCSS (`vendor/outsystems-ui/`) for the widget AND for every variant of
+  it. `specs/foundations/platform.md` lists the platform traps. Then:
   - The framework has the widget class → **restyle the bare class**: `.btn { … }`.
     **`.<prefix>-button.btn { … }` is a FAIL, not a compromise.** It looks like an override, but
     the platform never emits `.<prefix>-button`, so it only paints when a developer remembers to
@@ -64,10 +74,31 @@ Take ONE work item (named in the prompt, referenced in `loop/state.json`) and pr
 - **A border must never change a component's size.** A 1px border adds 2px of height. Use `inset box-shadow` / `outline` (zero layout cost) plus a pinned height.
 - **Never select on a framework runtime utility class** (e.g. `.placeholder-empty`). It is behavioural, not a styling hook.
 - **Prefer the host's own responsive classes** (`.tablet` / `.phone`) over raw `@media` breakpoints — the host's breakpoints are not yours.
-- **Every `src/blocks/*.css` you add must also be `<link>`ed in `preview/index.html`**, in the right layer order (framework base → theme → overrides), or it is not actually being previewed and a real bug can hide behind a passing preview. The checker MEASURES the preview, so an unlinked or mis-layered stylesheet is not a cosmetic omission — it is the difference between a reviewed component and an unreviewed one.
+- **Every `src/blocks/*.css` you add goes in `src/blocks/index.css`**, in its load order. That manifest feeds `dist/theme.css` and the specimen page alike — a file missing from it is missing from ODC and from the measurement.
+
+## The specimen — what the checker measures and the owner reviews
+Write or update `specs/<kind>/<item-id>/specimen.html`: a fragment with the widget as ODC renders it,
+in every state the ref draws. `npm run gate:measure` and `npm run review` wrap it in the page that
+stacks the compiled framework base, `dist/theme.css` and every block file, so you never hand-link a
+stylesheet. The rules are in the project's `specs/README.md`; the ones that bite:
+- The real rendered markup (classes, wrappers, provider DOM), never an idealised copy.
+- `data-gate="hover | active | focus"` holds a cell in that state.
+- `<!-- include: <other-id> -->` renders another item's specimen where a probe checks collateral.
+- `<script data-src="src/components/x.js"></script>` loads a Web Component the way ODC does.
+- Put `data-review="evidence"` on the `<h3>`/`<h4>` of every sibling, collateral or host-mode check.
+  The review Artifact opens on a clean demo of the component and hides those sections; the gate
+  still measures them.
+- Chrome classes are `wf-specimen__*` (the project's specimen chrome) and ship nothing to ODC.
+
+## The usage spec — same change, same PR
+Write or update `specs/<kind>/<item-id>.md` with the eight sections in `specs/README.md` (Metadata,
+Overview, Anatomy, Tokens used, Props/API, States, Code example, Cross-references). Every token it
+names must exist in `specs/tokens/token-reference.md` or be declared in `src/`; a literal the design
+needs is written with its FND id. Keep it lean: how to use what you built, not why you built it.
 
 ## Output
-- Write artifact files into `src/` (components/blocks) or `tokens/`.
+- Write artifact files into `src/` (components/blocks) or `tokens/`, the specimen, and the usage spec.
+- `npm run build:theme` must exit 0. It ends with the token audit: every visual literal in `src/` is a token, names its `FND-NNN`, or cites the `ref §` that authorises it.
 - Append findings to `loop/state.json.findings[]`.
 - Declare a **RISK-TIER** — `trivial` | `standard` | `core` — so the checker can calibrate scrutiny. (`trivial` = utility/config/token-alias; `core` = L5 Web Component, interactive composite, or load-bearing path; `standard` = everything else.)
 - Return a concise self-report: files written, tokens consumed, findings raised, your confidence, RISK-TIER, and anything the checker should scrutinize.
