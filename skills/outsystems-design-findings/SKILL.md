@@ -106,7 +106,7 @@ Every finding is recorded in the project's `findings/findings-register.md` as a 
 
 ## Routing (GitHub-first, connector-agnostic)
 
-The destination is **set per project**, not hard-coded. Read it from the project's `CLAUDE.md` / `project-context.md` (fields `findings.ticketing` and `findings.slack_channel`) or from memory (`OutSystems project: findings routing = ...`). Supported destinations:
+The destination is **set per project**, not hard-coded. Read it from the project's `project.config.json` (fields `findings.ticketing` and `findings.slack_channel`) or from memory (`OutSystems project: findings routing = ...`). Supported destinations:
 
 - **GitHub Issues + Projects (default).** Findings become issues in the project repo, **filed as the Bug type** (plus a `bug` label as the reliable fallback) and labeled by type/severity, optionally added to a Findings Project board. Created via the `gh` CLI in the Claude Code half of the hybrid workflow — this works on the private repo with no MCP dependency. This is the default because the code already lives on GitHub and findings stay next to it.
 - **Notion** (`Notion` connector) — if a project tracks design work in Notion.

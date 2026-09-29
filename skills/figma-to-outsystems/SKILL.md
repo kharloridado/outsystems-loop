@@ -33,7 +33,7 @@ Required project context:
 Default is **fidelity-first WCAG 2.2 AA**: apply implementation-level a11y automatically; flag (don't fix) anything that would alter a design-specified value. There is no single accessibility skill — the rules come from upstream, the 2.2 delta and the fix-vs-flag decision from `outsystems-design-findings`, and custom-element a11y from `outsystems-web-component`. See `references/accessibility-integration.md` for which applies where.
 
 ### 4. Findings routing config (per-project)
-Check the project's `CLAUDE.md` / `project-context.md` (or memory `OutSystems project: findings routing = ...`) for:
+Check the project's `project.config.json` → `findings` and `CLAUDE.md` (or memory `OutSystems project: findings routing = ...`) for:
 - `findings.ticketing` (github [default] / notion / jira) + `findings.ticket_target`
 - `findings.slack_channel`
 - `findings.gate` (high+ / all)
@@ -116,7 +116,6 @@ Invoke `outsystems-style-guide-doc`. Generated page **must** include the Accessi
      --title "[handover] acme-segmented — add Web Component + Block in OutSystems" \
      --body-file handover/<artifact>.md \
      --label "handover,task" \
-     --type "Task" \
      --assignee @me \
      --repo <owner/repo>
    ```

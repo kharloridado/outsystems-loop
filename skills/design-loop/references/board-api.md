@@ -218,7 +218,7 @@ gh issue list -R "$REPO" --search "[node:$NODE] in:body" --state all --json numb
 HANDOVER_URL=$(gh issue create -R "$REPO" \
   --title "[handover] $COMPONENT — add in OutSystems" \
   --body-file "handover/$ARTIFACT.md" \
-  --label "handover,task" --type "Task" --assignee "$DEV")
+  --label "handover,task" --assignee "$DEV")
 
 gh issue edit "$HANDOVER_NUMBER" -R "$REPO" --parent "$TIER_EPIC"
 gh project item-add "$NUM" --owner "$OWNER" --url "$HANDOVER_URL"

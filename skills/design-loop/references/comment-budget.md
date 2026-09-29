@@ -1,7 +1,7 @@
 # Comment budget — the artifact is not the review surface
 
 Applies to every file the loop writes: `tokens/*.css`, `src/blocks/*.css`,
-`src/components/*.js`, `style-guide/`. Read by the `maker` (what to write), the `checker`
+`src/components/*.js`. Read by the `maker` (what to write), the `checker`
 (what to fail), `outsystems-bem-css` and `outsystems-token-extractor`.
 
 **The rule: the code says WHAT. The PR says WHY.**
@@ -29,7 +29,7 @@ actually find.
 |---|---|---|
 | Approach chosen, alternatives ruled out, assumptions | PR body §Decision log, verbatim | the file header |
 | What this item deliberately does **not** build, and why | PR §What a human still has to check + the item's issue | a banner in the CSS |
-| Ref-vs-drawing disagreements, re-ref requests | `loop/refs/<id>/spec.md` under `## Ref discrepancies` | a comment block |
+| Ref-vs-drawing disagreements, re-ref requests | `specs/<kind>/<id>/ref.md` under `## Ref discrepancies` | a comment block |
 | "What the framework actually emits" selector inventories | the maker's DECISION-LOG → PR §Plan | the file header |
 | Design variant → framework class mapping | `handover/<artifact>.md` — the developer sets the widget's Style property from it | the file header |
 | Computed contrast ratios that pass | PR §Gates | beside every token |

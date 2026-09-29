@@ -60,8 +60,8 @@ now maintained by you instead of by the framework.
 does, you restyle THAT name.** BEM is how you name what the framework has *no* name for — it is
 not a parallel vocabulary to run beside the framework's.
 
-Grep the framework's own SCSS (`vendor/outsystems-ui/src/scss/`) and the project's captured
-rendered HTML (`outsystems-widgets-reference/`) for the widget **and every variant of it**. Then:
+Read the pattern in the frontend-skills pack (`vendor/outsystems-frontend-skills/ui-frameworks/outsystems-ui/`)
+and grep the framework's own SCSS (`vendor/outsystems-ui/src/scss/`) for the widget **and every variant of it**. Then:
 
 | What you found | Write this | Never this |
 | --- | --- | --- |
@@ -139,7 +139,7 @@ Two shapes, and rule zero decides which:
   applied via `ExtendedClass`. That is the shape below.
 
 ```css
-/* acme-card — custom Block CSS. Spec: loop/refs/cmp-card/. OSUI baseline v2.30.0. */
+/* acme-card — custom Block CSS. Spec: specs/components/cmp-card/. OSUI baseline v2.30.0. */
 
 /* Block */
 .acme-card { /* ... */ }

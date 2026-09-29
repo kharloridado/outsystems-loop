@@ -88,14 +88,14 @@ Follow the /outsystems-loop:board-sync skill procedure for this repo, with --rec
 
 Reconcile the board against git and loop/state.json, correct loop/state.json where it
 is wrong — never the board — reclaim any card stranded In Progress past
-board.staleAfterMinutes, and regenerate deliverables.md.
+board.staleAfterMinutes, and republish the library review page if this run has the Artifact tool.
 
 Never move a card to Approved or Done. Reclaim only out of In Progress, and only where
 no live runner holds the lock. Post one comment per reclaim saying which case it was.
 
 If nothing needed doing, say exactly that in one line and stop — a quiet run is the
 expected outcome. Otherwise report the drift corrected, the cards reclaimed, anything
-flagged for a human, and the deliverables.md diff.
+flagged for a human, and the library review link.
 ```
 
 Run it once with `--dry-run` in front of the user before scheduling it. Reclaim moves cards, and

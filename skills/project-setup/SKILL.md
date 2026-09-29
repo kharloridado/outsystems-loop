@@ -255,10 +255,9 @@ npm run build:osui
 ```
 
 **`vendor/outsystems-ui/` is a submodule and clones empty** (`git submodule status` shows a leading
-`-`). It is layer 1 of the preview — the real framework CSS the checker measures against. Skip it
-and the preview loads a 404 where the framework should be, the cascade silently falls back, and
-every measurement describes a page nobody will ever see. The fidelity gate now detects and refuses
-this, so the failure is loud, but it is still a wasted run.
+`-`). `npm run build:osui` compiles it into `review/vendor/outsystems-ui/` — layer 1 of every
+specimen page, the real framework CSS the checker measures against. Skip it and the gate refuses to
+measure (exit 4): loud, but still a wasted run.
 
 **Then pin it to the version the target ODC environment actually runs** — not `main`, not the
 newest tag. Ask which version; if they do not know, say so in the report and leave it, but record
@@ -411,7 +410,7 @@ See **`references/routines.md`** for the exact prompts. The default set:
 | Routine | Surface | Cadence | Why |
 |---|---|---|---|
 | **Loop advance** | cloud | nightly | Builds `queued` items → one PR each. The main event. |
-| **Board sync** | **local** | daily | Reconciles the board against the PRs the nightly run opened, reclaims stale claims, regenerates `deliverables.md`. Skip it and the board quietly stops describing reality. |
+| **Board sync** | **local** | daily | Reconciles the board against the PRs the nightly run opened, reclaims stale claims, republishes the library review page. Skip it and the board quietly stops describing reality. |
 | **Board ship** | **local** | on demand / hourly on a review day | Merges what the human already approved and opens the handover Task. |
 | **Token drift reconcile** | cloud | weekly | Re-pulls the Figma library and PRs any token drift. Recurring forever — a design system's tokens move. |
 | **Findings digest** | either | daily, optional | Read-only summary of open findings by severity. |
@@ -447,7 +446,7 @@ JSON
 node build/gate/measure-fidelity.mjs --probes /tmp/smoke.json
 ```
 
-Exit `0` means a browser was found, the preview served, and the cascade was complete. Exit `4`
+Exit `0` means a browser was found, the page was served, and the cascade was complete. Exit `4`
 means no browser (`npm install` did not take). Exit `3` with a failed-request line usually means
 the submodule step in §4 did not happen. **Fix it now** — this is exactly the failure that makes
 an unattended run produce nothing at 2am.

@@ -4,7 +4,7 @@ How to turn a finding that meets the routing gate into a tracked item and a noti
 
 ## Step 0 — Resolve the destination
 
-Read from the project's `CLAUDE.md` / `project-context.md`:
+Read from the project's `project.config.json` → `findings` (explained in `CLAUDE.md`):
 ```
 findings.ticketing     = github | notion | jira     # default: github
 findings.ticket_target = <owner/repo + optional Project name | Notion DB | Jira key>
@@ -35,9 +35,9 @@ gh issue create \
   --title "FND-001 [a11y/contrast] Primary CTA fails text contrast" \
   --body-file findings/tickets/FND-001.md \
   --label "finding,bug,a11y,sev:high" \
-  --type "Bug" \
   --repo <owner/repo>
-# --type is ignored if the org hasn't enabled issue types; the bug label still classifies it.
+# No --type flag unless the repo has issue types configured: without them gh creates the issue
+# and THEN fails on the type, which reads as a failure — and a retry files a duplicate.
 # optional, add straight to a board:
 #   --project "<Project name>"
 ```

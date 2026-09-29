@@ -129,7 +129,12 @@ git show "origin/$SHIP_BASE:handover/<artifact>.md" > "$TMP_BODY"
 Dedup before creating — every issue body carries `[node:<id>]` (§6). If a handover issue
 already exists for this node, reuse it; do not open a second.
 
-Create it as a **Task** (`--type "Task"`, labels `handover,task`), assigned to the developer
+If the item has a `review_url` in `loop/state.json`, put it at the top of the body — `**Review:**
+<review_url>` — so the developer sees the approved component demo beside the code to paste.
+
+Create it with labels `handover,task` — **no `--type` flag** unless the repo has issue types
+configured (on a repo without them `gh` creates the issue and then fails, and a retry files a
+duplicate) — assigned to the developer
 who does the OutSystems work (`--assignee @me` unless the card names someone). Attach it to the
 tier's handover epic with `gh issue edit --parent` when one exists; if none does, note that in
 the run report rather than inventing an epic. Add it to the board with `gh project item-add`.

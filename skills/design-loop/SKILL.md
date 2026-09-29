@@ -37,7 +37,7 @@ Read `project.config.json` (the project's values — `classPrefix`, `jsNamespace
 
    ```bash
    gh issue create --title "[handover] <component> — add in OutSystems" \
-     --body-file handover/<artifact>.md --label "handover,task" --type "Task" \
+     --body-file handover/<artifact>.md --label "handover,task" \
      --assignee <developer> --repo <owner/repo>
    ```
 
@@ -73,13 +73,16 @@ Stop when all items are "built"/"needs-human" (set status "done"), or iteration 
 When asked to advance one step, do exactly ONE item (or ONE phase-0/tier-boundary action), persist state, and exit.
 
 ## Report
-Always end a run by writing loop/REPORT.md: tier progress, items built, **the PR URL for each**, bugs filed (links), needs-human items, consistency-pass results. Also write a `## Review metrics` section so review coverage is visible run-over-run:
+Always end a run by writing loop/REPORT.md: tier progress, items built, **the PR URL and the review Artifact URL for each**, bugs filed (links), needs-human items, consistency-pass results. Also write a `## Review metrics` section so review coverage is visible run-over-run:
 - items auto-passed vs needs-human (review coverage)
 - findings filed vs challenged-out (false-positive rate)
 - checker rounds distribution (round-1-pass rate)
 - risk-tier coverage (how many `core` items got full-stack depth)
 - deterministic-gate pass rate
 - **rendered-fidelity coverage** — items with `visual: pass` vs `drift` vs `unverified`, and the number of properties actually measured. This is the only metric that reflects whether the build LOOKS like the design; the others all measure process throughput, and a pipeline that ships drifted components scores 100% on every one of them.
+
+Then run `npm run review` and republish the library page with the Artifact tool to `library_review_url` in `loop/state.json` (publish it once and record the URL if there is none). Skip it in a run with no Artifact tool, and say so in the report.
+
 Do NOT touch OutSystems — integration is manual, and it starts from the handover Task the human
 opens after merging the PR.
 

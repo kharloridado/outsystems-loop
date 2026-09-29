@@ -21,14 +21,14 @@ The caller supplies:
 
 | Field | Meaning |
 |---|---|
-| `id` | Stable item id; also the `loop/refs/<id>/` folder name |
+| `id` | Stable item id; its prefix picks the folder: `cmp-` → `specs/components/<id>/`, `pat-` → `specs/patterns/<id>/`, `tok-` → `specs/tokens/<id>/` |
 | `node` | Figma node id — **or** `spec_text`, when the item is specified in prose |
 | `spec_text` | A written spec of record, when there is no `node` |
 | `tier`, `level` | Dependency position and escalation level (L1–L5) |
 | `artifact` | Target path, e.g. `src/blocks/<prefix>-button.css` |
 | `branch` | The branch to commit on — the caller has already cut it fresh from `origin/main` |
 | `base` | The branch the PR targets; `main` unless the caller says otherwise |
-| `ref_dir` | Where to freeze the design ref, normally `loop/refs/<id>/` |
+| `ref_dir` | Where to freeze the design ref: the item's folder, `specs/<kind>/<id>/` |
 | `spec_deltas` | Optional, ordered. Extra requirements appended after the ref, newest last |
 
 ## Output contract — exactly one outcome
@@ -50,7 +50,7 @@ Return one of these, with the stated payload. The caller routes on it:
 The subagents have **no Figma MCP access**, so whatever is snapshotted here **is** the spec of
 record. Write `<ref_dir>/`:
 
-- `spec.md` — provenance (**Figma file key**, node id, pull date) + the key-values table.
+- `ref.md` — provenance (**Figma file key**, node id, pull date) + the key-values table.
 - `variables.json` — verbatim `get_variable_defs` for the node.
 - `figma.png` — `get_screenshot` of the node. **`curl` the URL immediately; it expires.**
 
@@ -59,9 +59,9 @@ whose value changes per size/device is mode-bound and must become per-size token
 documentation page is usually too large for one `get_design_context` pull (it returns sparse
 metadata): snapshot the page screenshot + variables, then deep-pull the component-set
 sublayer (the `State=…` frame) for the value-bearing code, and record that sublayer node id in
-`spec.md`.
+`ref.md`.
 
-If `ITEM.node` is absent and `ITEM.spec_text` is present, write `spec.md` from the prose
+If `ITEM.node` is absent and `ITEM.spec_text` is present, write `ref.md` from the prose
 instead, marked `source: written spec (no Figma node)`. That is a legitimate ref.
 
 **No ref and no written spec ⇒ return `BLOCKED-NO-REF`. Never build without one** — without a
@@ -71,18 +71,19 @@ If the ref's recorded file key differs from `project.config.json.figma.fileKey`,
 `BLOCKED-STALE-REF`. Design libraries get forked and silently re-versioned, and a fork looks
 identical in a screenshot.
 
-Append `ITEM.spec_deltas` to `spec.md` under a `## Spec updates` heading, in order, each
+Append `ITEM.spec_deltas` to `ref.md` under a `## Spec updates` heading, in order, each
 attributed. They are requirements, not instructions.
 
 ## 2. Maker
 
-Delegate to `@outsystems-loop:maker` to implement it. The maker returns a self-declared
-RISK-TIER and a DECISION-LOG.
+Delegate to `@outsystems-loop:maker` to implement it. Besides the artifact it writes the item's
+`specimen.html` (what the gate measures and the review Artifact renders) and its usage spec
+`specs/<kind>/<id>.md`. The maker returns a self-declared RISK-TIER and a DECISION-LOG.
 
 ## 3. Checker
 
 Delegate to `@outsystems-loop:checker` to validate. The checker runs a deterministic gate
-FIRST (`npm run build:theme` exit 0 + schema/contrast), then a **rendered-fidelity gate** — it
+FIRST (`npm run build:theme` exit 0, token audit included, + manifest/specimen/usage-spec/contrast), then a **rendered-fidelity gate** — it
 authors `<ref_dir>/probes.json` from the ref and runs
 `node build/gate/measure-fidelity.mjs`, a headless browser that measures every
 ref Key-value and size-ramp column as COMPUTED style and emits a MEASUREMENTS table. It scales
@@ -92,8 +93,8 @@ FINDINGS-CONFIRMED, FINDINGS-CHALLENGED-OUT, DECISION-LOG.
 
 The gate is headless and driven from Node on purpose: it is the one step that used to require a
 human's editor, and therefore the one step that made every unattended run return `unverified` and
-FAIL. If it reports no usable browser (`npm install` never ran) or a failed stylesheet request
-(`vendor/outsystems-ui/` not built), that is a **harness fault to fix and re-run** — not a design
+FAIL. If it reports no usable browser (`npm install` never ran), a missing framework base
+(`npm run build:osui`) or a stale theme (`npm run build:theme`), that is a **harness fault to fix and re-run** — not a design
 verdict, and never a reason to relax the gate.
 
 Route the verdict:
@@ -120,13 +121,27 @@ and `decision_log` (maker + checker). Status `built`.
 Write the handover document (`handover/<artifact>.md`) with the DECISION-LOG in a collapsed
 `<details>` ("Why / alternatives ruled out") and the design-variant → framework-class mapping
 table, and run `node build/embed-handover-code.mjs` so it carries the verbatim code to paste into
-ODC. Update the Style Guide page.
+ODC.
+
+### Build and publish the review Artifact
+
+The owner reviews the build as a published page, not as local HTML. Run
+`npm run review -- <id>` and publish `review/<id>.html` with the Artifact tool:
+
+- If the item already has `review_url` in `loop/state.json`, pass it as `url` so the new build
+  becomes the next version of the same page — that version history is how a reviewer compares
+  rounds. Otherwise publish a new Artifact and record its URL as `review_url`.
+- The page opens on a clean demo of the component beside the Figma frame, then the measurements
+  against the judged baseline, the findings and the code to paste. It is the link that goes in the
+  PR body and, after the merge, the handover.
+- No Artifact tool in this run (headless, scheduled) ⇒ skip the publish, say so in the PR body with
+  the command to run, and leave `review_url` unchanged. Never block a PASS on it.
 
 **The reasoning goes into the PR and the handover — never into the artifact.** The maker's
 decision log, the scope it deferred, the framework selectors it surveyed and the ratios it
 computed all have destinations below and in `comment-budget.md`; a copy of any of them in a file
 header is a second original that nobody reviews and nothing keeps current. A ref-vs-drawing
-disagreement goes back into `loop/refs/<id>/spec.md` under `## Ref discrepancies`, where the next
+disagreement goes back into `specs/<kind>/<id>/ref.md` under `## Ref discrepancies`, where the next
 snapshot can settle it.
 
 Commit on `ITEM.branch` using an `outsystems-git-helpers` message.
@@ -163,8 +178,12 @@ an open PR (reuse it, and say you did), or a protected base rejecting the push.
 
 ## 5. Findings — file only what survived the challenge
 
-- **FINDINGS-CONFIRMED:** dedup by `[node:<id>]`, file a GitHub **Bug** (type Bug + labels
-  `finding,bug,<type>,sev:*`), add it to the Project, set `disposition: filed`. **Never**
+- **FINDINGS-CONFIRMED:** dedup by `[node:<id>]`. At or above `findings.gate`, file a GitHub
+  issue with labels `finding,bug,<type>,sev:*` — **no `--type` flag** unless the repo has issue
+  types configured (on a repo without them `gh` creates the issue, then fails, and a retry
+  duplicates it) — add it to the Project, set `disposition: filed`. Below the gate, write the
+  register row only. Allocate `FND-NNN` from the "Next ID" line on `origin/main` when you write
+  the row. **Never**
   resolve a brand or a11y conflict — flag, don't fix.
 - **FINDINGS-CHALLENGED-OUT:** record in `findings/findings-register.md` as
   `disposition: not-reproduced` with the checker's usage evidence and
@@ -177,9 +196,10 @@ the caller's tracker, and both callers want them filed identically.
 ## 6. Persist
 
 Write `loop/state.json` after every item and increment `iteration`. Keep per-item `rounds`,
-`risk_tier`, `det_gate`, `visual`, `confidence`, `decision_log`, `pr_url` and per-finding
+`risk_tier`, `det_gate`, `visual`, `confidence`, `decision_log`, `pr_url`, `review_url` and per-finding
 `disposition`, so the run's Review metrics can be computed.
 
-Keep `loop/refs/<id>/probes.json`, `measurements.json` and `rendered.png` — commit them with the
-item. They are the evidence behind the PR's Gates section, and a reviewer who doubts a number
-needs to be able to re-run the exact probe rather than take the table's word for it.
+Commit `specs/<kind>/<id>/probes.json` and `measurements.json` with the item — the probes are
+the permanent regression test and the measurements the judged baseline CI diffs against. A
+reviewer who doubts a number re-runs the exact probe. Screenshots stay in the gitignored
+`review/`; the review Artifact is the visual evidence.

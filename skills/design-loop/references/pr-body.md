@@ -41,7 +41,8 @@ and where it goes in ODC.>
 | Artifact | `<path>` |
 | Risk tier | `<trivial \| standard \| core>` (checker applied `<depth>`) |
 | Rounds | `<n>` of `<cap>` |
-| Spec of record | [`loop/refs/<id>/spec.md`](../blob/<branch>/loop/refs/<id>/spec.md) |
+| Review | **[Review Artifact](<review_url>)** — the component demo beside Figma, measurements, findings, code to paste |
+| Spec of record | [`specs/<kind>/<id>/ref.md`](../blob/<branch>/specs/<kind>/<id>/ref.md) · usage spec [`specs/<kind>/<id>.md`](../blob/<branch>/specs/<kind>/<id>.md) |
 | Figma | node `<node-id>` in file key `<key>` — pulled `<date>` |
 
 ## Plan
@@ -53,10 +54,10 @@ or why a Web Component was necessary, which tokens it consumes, which files it t
 
 | Gate | Result |
 |---|---|
-| `npm run build:theme` (check:config → assemble → validate) | `<pass \| fail>` |
+| `npm run build:theme` (checks → assemble → validate → token audit) | `<pass \| fail>` |
 | Rendered fidelity | `<pass \| drift \| unverified>` — `<n>` properties measured across `<viewports>` |
 | Contrast computed for every text/UI pair | `<yes \| n/a>` |
-| Block CSS `<link>`ed in `preview/index.html` | `<yes \| n/a>` |
+| Block CSS in `src/blocks/index.css`; specimen and usage spec written | `<yes \| n/a>` |
 
 <details><summary>Measurements — property · ref · measured · verdict</summary>
 
@@ -105,8 +106,8 @@ OutSystems build off an unmerged branch.
 
 ## What a human still has to check
 
-- [ ] Open the preview and look at it next to `figma.png` — numbers agreeing is not the same as
-      looking right.
+- [ ] Open the review Artifact and look at the demo next to the Figma frame — numbers agreeing is
+      not the same as looking right.
 - [ ] `<Anything the checker flagged as low confidence or could not measure.>`
 - [ ] `<Any assumption the maker made where the ref was silent — these are the rows most likely
       to be wrong.>`
