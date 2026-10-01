@@ -1,6 +1,6 @@
 # OutSystems Design Loop — Claude Code plugin
 
-The **behaviour** half of the Figma → OutSystems design-system workflow: 16 skills plus the
+The **behaviour** half of the Figma → OutSystems design-system workflow: 17 skills plus the
 `maker` / `checker` agent pair that drive the autonomous build loop.
 
 It holds **no OutSystems platform knowledge**. Block names, arguments, CSS variables, utility
@@ -71,13 +71,14 @@ template's layout.
 | `/outsystems-loop:revalidate` | Re-run the checker against an **already-built** artifact, item or PR — no maker, no rebuild. For review questions, hand-edits, or a verdict you distrust. |
 | `/outsystems-loop:board-ship` | Board *view*, local surface: `Approved` → PR → squash-merge to `main` → handover Task → `Handover`. |
 | `/outsystems-loop:board-sync` | Board *view*, local surface: reconcile board/git/state, reclaim stale claims, republish the library review page. |
+| `outsystems-frontend-router` | First stop for OutSystems UI questions and builds: routes into the vendored frontend-skills pack by path, checks it against the live app, and splits the work by ODC module (theme first, then each consumer app). |
 | `figma-to-outsystems` | Master workflow orchestrator. |
 | `outsystems-component-audit` | Triage a design: exists as-is / customize / build custom (L1–L5). |
 | `outsystems-token-extractor` | Figma variables → `:root` custom properties. |
 | `outsystems-figma-integration` | Read Figma directly via MCP. |
 | `outsystems-bem-css` | BEM CSS that overrides native widgets, token-only. |
 | `outsystems-web-component` | Vanilla-JS Web Components + Block wrapper (L5 only). |
-| `outsystems-mentor-build` | Driving a build into a live ODC module through Mentor/MCP, and verifying it landed. |
+| `outsystems-mentor-build` | Driving a build into a live ODC module through Mentor/MCP — or writing the Mentor prompts a developer pastes — and verifying it landed. |
 | `outsystems-design-findings` | The flag-don't-fix pipeline: classify, refute, route. |
 | `outsystems-style-guide-doc` | Live Style Guide pages. |
 | `outsystems-git-helpers` | Conventional commits, branches, PRs, changelog. |
