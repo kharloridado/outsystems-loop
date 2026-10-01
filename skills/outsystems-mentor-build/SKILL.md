@@ -1,6 +1,6 @@
 ---
 name: outsystems-mentor-build
-description: Drive a build inside a real ODC module through Mentor over the OutSystems MCP — screens, layouts, widget trees, theme CSS — and verify it actually landed. Use this skill whenever work is being applied to a live OutSystems app rather than emitted as files: creating or editing a screen, assembling a widget tree, adding a placeholder or an optional region to a Layout, pasting a theme, or sequencing and publishing Mentor turns. Also use it whenever a Mentor turn reports success and you are about to believe it.
+description: Drive a build inside a real ODC module through Mentor over the OutSystems MCP — screens, layouts, widget trees, theme CSS — and verify it actually landed. Use this skill whenever work is being applied to a live OutSystems app rather than emitted as files: creating or editing a screen, assembling a widget tree, adding a placeholder or an optional region to a Layout, pasting a theme, or sequencing and publishing Mentor turns. Also use it when writing a Mentor Studio prompt for a developer to paste (a handover), especially a structural one split across the theme module and consumer apps, and whenever a Mentor turn reports success and you are about to believe it.
 ---
 
 # Driving an ODC build through Mentor
@@ -105,6 +105,56 @@ Build the tree instead: name each widget, its Style Class, and its literal text.
 tree in a prompt is longer to write than a blob of HTML and dramatically more reliable to
 apply — measured on one real screen, a 52-item grid took `internal_retry_count` **1** and
 **0** as two Container-tree turns, against **9** for the single HTML literal.
+
+### Target HTML as a *spec* is different — and needs saying so
+
+A structural prompt (a Layout, a shared `Common` Block) may describe the result as the **rendered
+HTML it must produce**. That is not the literal this section bans, provided the prompt does three
+things:
+
+1. **A widget legend** maps every piece of markup to a widget: `data-block="X.Y"` = Block `Y` from
+   `X`, `data-container` = Container, `data-advancedhtml` = HTML Element with that tag,
+   `data-expression` = Expression, `data-link` / `data-image` = Link / Image, a `<div>` marked
+   `<!-- PLACEHOLDER Name -->` = Placeholder, `class` = the widget's Style Classes.
+2. **One explicit sentence:** "Build these as real widgets. Never paste this HTML into an
+   Expression or an HTML Element." Mentor reads HTML well; without the sentence it may take the
+   shortcut.
+3. **Diff markers** on each line — `<- ADD`, `<- MOVE here`, `<- REMOVE …`, `(unchanged)` — so it is
+   an edit to the existing tree, not a rebuild.
+
+Measured on a side-menu build: target HTML with a legend landed Layout, Menu, ApplicationTitle and
+UserInfo restructures in one pass each, where prose widget trees had needed repeated corrections.
+Verification is unchanged: the outline check, class check and boxes below still decide.
+
+## Prompts a human pastes into Mentor Studio
+
+When the output is a prompt for a developer to paste (a handover), rather than an MCP turn you
+drive, add these on top of everything above:
+
+- **Self-contained.** Mentor sees no repo, no handover, no vendored pack and no skill. Cite no
+  file, path, finding id or ref section. State each upstream rule in plain words in an "OutSystems
+  UI rules to follow" list.
+- **One prompt per module, in build order.** Split the work with `outsystems-frontend-router` Step 4
+  first: Prompt A in the theme module (the public layout Block, with every app-specific slot a
+  Placeholder), Prompt B in each consumer app (`Common` Blocks and the screens that fill the
+  placeholders). Label each with its module. In the project template, an entry in
+  `handover/handover-map.json` takes `mentor.prompts: [{ title, text }]` for this.
+- **Placeholder, Container or Text.** A slot whose content changes per screen is a Placeholder
+  (keep `placeholder-empty` on it); a Container only wraps; Text/Expression is chrome that never
+  changes.
+- **Name what not to touch, with the reason** — especially framework-wide switches. Mentor turned on
+  a layout's `EnableAccessibilityFeatures` against a plain instruction; that switch changes focus
+  and hover styles of every input, dropdown, button and checkbox inside the layout.
+- **Shared Blocks: add, don't move.** If another layout hosts the same Block, moving a widget inside
+  it changes that layout too. Add a second instance where the new layout needs it and switch with
+  CSS scoped to the layout.
+- **"Every branch".** If a Block has an `If`, say the target markup applies to every branch, or
+  Mentor edits one.
+- **Fixed-string attributes**; `If(…, "page", "false")`, never `""`.
+- **End with a report request:** list every widget added, moved or deleted, by Block and Name, and
+  flag anything not built exactly as the target shows.
+- **After it runs, measure the published page and send a delta** — a short prompt scoped to one
+  Block: numbered steps, a `Result:` snippet, "No CSS, no JavaScript, no other changes."
 
 ## Classing a widget — Style Classes first, Extended Properties as the fallback
 
