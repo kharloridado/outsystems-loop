@@ -131,9 +131,15 @@ Verification is unchanged: the outline check, class check and boxes below still 
 When the output is a prompt for a developer to paste (a handover), rather than an MCP turn you
 drive, add these on top of everything above:
 
-- **Self-contained.** Mentor sees no repo, no handover, no vendored pack and no skill. Cite no
-  file, path, finding id or ref section. State each upstream rule in plain words in an "OutSystems
-  UI rules to follow" list.
+- **Self-contained.** Mentor sees no repo, no handover, no vendored pack and no skill — only what is
+  in the module. Cite no repo file, path, finding id or ref section. State each upstream rule in
+  plain words in an "OutSystems UI rules to follow" list.
+- **Imported specs, once proven.** The project template keeps the design system agent-readable as
+  Markdown in `specs/` (usage specs, foundations, token reference, decisions) so it can be imported
+  into an ODC module as Resources — context for Mentor and for whoever uses the Live Style Guide.
+  If the module has them **and** you have confirmed Mentor reads them there (ask it to summarise
+  one by name; check the answer against the file), a prompt may name the resource instead of
+  restating it. Keep the rules a wrong build would break inline either way.
 - **One prompt per module, in build order.** Split the work with `outsystems-frontend-router` Step 4
   first: Prompt A in the theme module (the public layout Block, with every app-specific slot a
   Placeholder), Prompt B in each consumer app (`Common` Blocks and the screens that fill the

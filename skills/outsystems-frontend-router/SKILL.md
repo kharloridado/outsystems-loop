@@ -95,5 +95,9 @@ Four rules follow:
 | Build a component the framework does not ship | `outsystems-web-component` |
 | Triage a design against what OutSystems UI ships | `outsystems-component-audit` |
 
-**Mentor cannot read the pack, the repo, or this skill.** Anything from Steps 2–4 that a Mentor
-prompt depends on must be written into the prompt in plain words.
+**Mentor sees what is in the module, not the repo.** It cannot read the vendored pack, the repo or
+this skill. It *may* be able to read Markdown the project imports into an ODC module as Resources —
+the design system's usage specs, foundations, token reference and decisions, which the project
+template keeps agent-readable in `specs/` for exactly this. Until that is verified for the module
+you are prompting in, write everything a Mentor prompt depends on into the prompt in plain words;
+once verified, name the imported resource and keep only the load-bearing rules inline.
